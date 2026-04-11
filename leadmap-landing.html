@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LeadMap — Prospectez plus intelligemment</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --ink:#0A0E17;
+  --ink2:#111827;
+  --surface:#151C2C;
+  --surface2:#1E2740;
+  --line:rgba(255,255,255,.07);
+  --line2:rgba(255,255,255,.12);
+  --accent:#3B7BF6;
+  --accent2:#5B9AF8;
+  --gold:#F0B429;
+  --white:#F7F9FC;
+  --muted:#8896B0;
+  --pink:#F472B6;
+}
+
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--ink);color:var(--white);overflow-x:hidden;line-height:1.6}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:20px 40px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid transparent;transition:all .4s}
+nav.scrolled{background:rgba(10,14,23,.92);backdrop-filter:blur(20px);border-bottom-color:var(--line)}
+.nav-logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+.logo-mark{width:30px;height:30px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:white}
+.nav-links{display:flex;align-items:center;gap:32px}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:400;transition:color .2s}
+.nav-links a:hover{color:var(--white)}
+.nav-cta{background:var(--accent);color:white;padding:9px 22px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500;transition:all .2s}
+.nav-cta:hover{background:var(--accent2);transform:translateY(-1px)}
+
+/* ── HERO ── */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 40px 80px;position:relative;overflow:hidden}
+
+.hero-bg{position:absolute;inset:0;z-index:0}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(59,123,246,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(59,123,246,.06) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 60% at 50% 50%,black 40%,transparent 100%)}
+.hero-glow{position:absolute;width:800px;height:800px;border-radius:50%;background:radial-gradient(circle,rgba(59,123,246,.15) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%)}
+.hero-glow2{position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(240,180,41,.08) 0%,transparent 70%);top:30%;right:15%}
+
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(59,123,246,.12);border:1px solid rgba(59,123,246,.25);border-radius:99px;padding:6px 16px;font-size:12px;font-weight:500;color:var(--accent2);margin-bottom:28px;position:relative;z-index:1;animation:fadeUp .6s ease both}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+
+.hero-title{font-family:'Syne',sans-serif;font-size:clamp(42px,6vw,82px);font-weight:800;line-height:1.05;letter-spacing:-.03em;margin-bottom:24px;position:relative;z-index:1;animation:fadeUp .7s .1s ease both}
+.hero-title em{font-style:normal;color:var(--accent)}
+.hero-title .strike{position:relative;color:var(--muted)}
+.hero-title .strike::after{content:'';position:absolute;left:0;right:0;top:52%;height:2px;background:var(--pink);transform:rotate(-1deg)}
+
+.hero-sub{font-size:clamp(16px,2vw,20px);color:var(--muted);max-width:560px;font-weight:300;margin-bottom:48px;position:relative;z-index:1;animation:fadeUp .7s .2s ease both;line-height:1.6}
+
+.hero-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1;animation:fadeUp .7s .3s ease both}
+.btn-primary{background:var(--accent);color:white;padding:14px 32px;border-radius:10px;text-decoration:none;font-size:15px;font-weight:500;transition:all .2s;display:inline-flex;align-items:center;gap:8px}
+.btn-primary:hover{background:var(--accent2);transform:translateY(-2px);box-shadow:0 12px 32px rgba(59,123,246,.35)}
+.btn-secondary{background:var(--surface);color:var(--white);padding:14px 32px;border-radius:10px;text-decoration:none;font-size:15px;font-weight:400;border:1px solid var(--line2);transition:all .2s}
+.btn-secondary:hover{border-color:rgba(255,255,255,.25);transform:translateY(-2px)}
+
+.hero-social-proof{margin-top:48px;position:relative;z-index:1;animation:fadeUp .7s .4s ease both;color:var(--muted);font-size:13px;display:flex;align-items:center;justify-content:center;gap:16px}
+.avatars{display:flex}
+.avatar{width:28px;height:28px;border-radius:50%;border:2px solid var(--ink);margin-left:-8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.avatar:first-child{margin-left:0}
+
+/* ── APP PREVIEW ── */
+.preview-wrap{position:relative;z-index:1;margin-top:64px;animation:fadeUp .8s .5s ease both;max-width:900px;width:100%}
+.preview-chrome{background:var(--surface);border:1px solid var(--line2);border-radius:14px;overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05)}
+.preview-bar{padding:12px 16px;background:var(--surface2);display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+.preview-dots{display:flex;gap:6px}
+.pdot{width:10px;height:10px;border-radius:50%}
+.pdot:nth-child(1){background:#FF5F57}
+.pdot:nth-child(2){background:#FFBD2E}
+.pdot:nth-child(3){background:#28CA41}
+.preview-url{flex:1;background:var(--ink);border-radius:6px;padding:5px 12px;font-size:11px;color:var(--muted);text-align:center;max-width:220px;margin:0 auto}
+.preview-inner{padding:0;position:relative;height:360px;overflow:hidden}
+.preview-map{width:100%;height:100%;object-fit:cover;filter:brightness(.7) saturate(1.3)}
+.preview-overlay{position:absolute;inset:0;background:linear-gradient(135deg,rgba(10,14,23,.85) 0%,rgba(10,14,23,.3) 50%,transparent 100%)}
+
+/* Mock CRM inside preview */
+.mock-crm{position:absolute;inset:0;display:flex}
+.mock-sidebar{width:180px;background:rgba(21,28,44,.95);border-right:1px solid var(--line);padding:16px;flex-shrink:0}
+.mock-logo{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:var(--white);margin-bottom:20px;display:flex;align-items:center;gap:6px}
+.mock-logo-dot{width:7px;height:7px;border-radius:50%;background:var(--gold)}
+.mock-section-title{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:8px;font-weight:500}
+.mock-filter{display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:5px;font-size:11px;color:var(--muted);margin-bottom:3px}
+.mock-filter.active{background:rgba(255,255,255,.08);color:var(--white)}
+.mock-fdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.mock-fcnt{margin-left:auto;font-size:10px;background:rgba(255,255,255,.07);padding:0 5px;border-radius:99px}
+.mock-items{margin-top:12px;display:flex;flex-direction:column;gap:3px}
+.mock-item{display:flex;align-items:center;gap:7px;padding:6px 7px;border-radius:5px}
+.mock-item:nth-child(1){background:rgba(59,123,246,.15)}
+.mock-av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:white;flex-shrink:0}
+.mock-iname{font-size:10px;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mock-icity{font-size:9px;color:var(--muted)}
+.mock-sdot{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-left:auto}
+.mock-map{flex:1;position:relative;overflow:hidden}
+.mock-map-bg{position:absolute;inset:0;background:#1a2438;opacity:.9}
+.mock-map-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(59,123,246,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(59,123,246,.08) 1px,transparent 1px);background-size:30px 30px}
+
+/* Fake map markers */
+.mock-markers{position:absolute;inset:0}
+.mock-marker{position:absolute;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;box-shadow:0 3px 10px rgba(0,0,0,.4);cursor:pointer;transition:transform .2s}
+.mock-marker:hover{transform:scale(1.2)}
+.mock-marker.blue{background:#3B7BF6;border:2px solid rgba(255,255,255,.4)}
+.mock-marker.pink{background:#F472B6;border:2px solid rgba(255,255,255,.4)}
+
+/* Map legend */
+.mock-legend{position:absolute;bottom:12px;left:12px;background:rgba(21,28,44,.95);border-radius:7px;padding:8px 12px;font-size:9px}
+.mock-leg-item{display:flex;align-items:center;gap:5px;color:var(--white);margin-bottom:3px}
+.mock-leg-item:last-child{margin-bottom:0}
+.mock-leg-dot{width:8px;height:8px;border-radius:50%}
+
+/* Header stats */
+.mock-header{position:absolute;top:0;left:180px;right:0;background:rgba(13,18,31,.95);border-bottom:1px solid var(--line);padding:8px 16px;display:flex;align-items:center;gap:16px;z-index:2}
+.mock-stat{text-align:center}
+.mock-stat-num{font-size:13px;font-weight:700;color:var(--white);line-height:1}
+.mock-stat-lbl{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.mock-stat-num.gold{color:var(--gold)}
+.mock-stat-num.green{color:#4ADE80}
+.mock-tabs{display:flex;gap:3px;margin-left:auto}
+.mock-tab{padding:4px 10px;border-radius:4px;font-size:9px;font-weight:500;color:var(--muted);background:transparent}
+.mock-tab.active{background:var(--surface2);color:var(--white)}
+
+/* ── FEATURES ── */
+.section{padding:120px 40px;max-width:1100px;margin:0 auto}
+.section-label{font-size:12px;text-transform:uppercase;letter-spacing:.15em;color:var(--accent);font-weight:600;margin-bottom:16px}
+.section-title{font-family:'Syne',sans-serif;font-size:clamp(30px,4vw,48px);font-weight:800;line-height:1.1;letter-spacing:-.02em;margin-bottom:16px}
+.section-sub{color:var(--muted);font-size:17px;font-weight:300;max-width:500px;line-height:1.7}
+
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-radius:16px;overflow:hidden;margin-top:64px}
+.feat-card{background:var(--ink2);padding:36px 32px;transition:background .2s}
+.feat-card:hover{background:var(--surface)}
+.feat-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:20px}
+.feat-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;margin-bottom:10px;letter-spacing:-.01em}
+.feat-desc{color:var(--muted);font-size:14px;line-height:1.7;font-weight:300}
+
+/* ── INTEGRATIONS ── */
+.integrations-section{padding:80px 40px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.int-inner{max-width:1100px;margin:0 auto;text-align:center}
+.int-title{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:32px}
+.int-logos{display:flex;align-items:center;justify-content:center;gap:40px;flex-wrap:wrap}
+.int-logo{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:15px;font-weight:500;opacity:.6;transition:opacity .2s}
+.int-logo:hover{opacity:1}
+.int-logo-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+
+/* ── PRICING ── */
+.pricing-section{padding:120px 40px}
+.pricing-inner{max-width:1100px;margin:0 auto}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:64px}
+.price-card{background:var(--ink2);border:1px solid var(--line);border-radius:16px;padding:36px;transition:all .2s;position:relative}
+.price-card:hover{border-color:var(--line2);transform:translateY(-4px)}
+.price-card.featured{background:var(--surface);border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 20px 60px rgba(59,123,246,.2)}
+.price-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--accent);color:white;font-size:11px;font-weight:600;padding:4px 14px;border-radius:99px;white-space:nowrap}
+.price-name{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:8px}
+.price-amount{font-family:'Syne',sans-serif;font-size:42px;font-weight:800;letter-spacing:-.03em;line-height:1;margin-bottom:6px}
+.price-amount span{font-size:18px;font-weight:400;color:var(--muted)}
+.price-period{font-size:13px;color:var(--muted);margin-bottom:28px}
+.price-features{list-style:none;margin-bottom:32px;display:flex;flex-direction:column;gap:10px}
+.price-features li{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.price-features li::before{content:'✓';color:var(--accent);font-weight:700;flex-shrink:0}
+.price-features li.muted::before{content:'—';color:var(--line2)}
+.price-features li.muted{opacity:.4}
+.price-btn{display:block;text-align:center;padding:12px;border-radius:8px;font-size:14px;font-weight:500;text-decoration:none;transition:all .2s}
+.price-btn.outline{border:1px solid var(--line2);color:var(--white)}
+.price-btn.outline:hover{border-color:rgba(255,255,255,.3);background:var(--surface)}
+.price-btn.filled{background:var(--accent);color:white}
+.price-btn.filled:hover{background:var(--accent2)}
+
+/* ── WAITLIST ── */
+.waitlist-section{padding:120px 40px;text-align:center}
+.waitlist-inner{max-width:560px;margin:0 auto}
+.waitlist-title{font-family:'Syne',sans-serif;font-size:clamp(32px,5vw,56px);font-weight:800;line-height:1.1;letter-spacing:-.03em;margin-bottom:20px}
+.waitlist-sub{color:var(--muted);font-size:17px;font-weight:300;margin-bottom:40px}
+.waitlist-form{display:flex;gap:10px;max-width:440px;margin:0 auto}
+.waitlist-input{flex:1;background:var(--surface);border:1px solid var(--line2);border-radius:10px;padding:13px 18px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--white);outline:none;transition:border-color .2s}
+.waitlist-input::placeholder{color:var(--muted)}
+.waitlist-input:focus{border-color:var(--accent)}
+.waitlist-btn{background:var(--accent);color:white;border:none;border-radius:10px;padding:13px 24px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap}
+.waitlist-btn:hover{background:var(--accent2);transform:translateY(-1px)}
+.waitlist-note{font-size:12px;color:var(--muted);margin-top:14px}
+
+/* ── FOOTER ── */
+footer{padding:40px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;max-width:1100px;margin:0 auto}
+.footer-logo{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--muted)}
+.footer-links{display:flex;gap:24px}
+.footer-links a{color:var(--muted);text-decoration:none;font-size:13px;transition:color .2s}
+.footer-links a:hover{color:var(--white)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  nav{padding:16px 20px}
+  .nav-links{display:none}
+  .hero{padding:100px 24px 60px}
+  .section{padding:80px 24px}
+  .features-grid{grid-template-columns:1fr}
+  .pricing-grid{grid-template-columns:1fr}
+  .mock-sidebar{display:none}
+  .mock-header{left:0}
+  .waitlist-form{flex-direction:column}
+  footer{flex-direction:column;gap:20px;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-logo">
+    <div class="logo-mark">L</div>
+    LeadMap
+  </div>
+  <div class="nav-links">
+    <a href="#features">Fonctionnalités</a>
+    <a href="#pricing">Tarifs</a>
+    <a href="#waitlist">Accès anticipé</a>
+  </div>
+  <a href="https://leadmap-omega.vercel.app" class="nav-cta">Essayer gratuitement →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg">
+    <div class="hero-grid"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-glow2"></div>
+  </div>
+
+  <div class="hero-badge">
+    <div class="badge-dot"></div>
+    CRM de prospection nouvelle génération
+  </div>
+
+  <h1 class="hero-title">
+    Vos prospects<br>
+    <em>sur la carte.</em><br>
+    Votre pipeline<br>sous contrôle.
+  </h1>
+
+  <p class="hero-sub">
+    LeadMap connecte votre Gmail, visualise vos prospects sur une carte interactive et synchronise votre pipeline en temps réel. Fini les spreadsheets.
+  </p>
+
+  <div class="hero-actions">
+    <a href="https://leadmap-omega.vercel.app" class="btn-primary">Commencer gratuitement →</a>
+    <a href="#features" class="btn-secondary">Voir les fonctionnalités</a>
+  </div>
+
+  <div class="hero-social-proof">
+    <div class="avatars">
+      <div class="avatar" style="background:#3B7BF6">P</div>
+      <div class="avatar" style="background:#F472B6">S</div>
+      <div class="avatar" style="background:#F0B429">M</div>
+      <div class="avatar" style="background:#4ADE80">L</div>
+    </div>
+    <span>Déjà utilisé par des freelances & agences en Suisse, France, Belgique</span>
+  </div>
+
+  <!-- APP PREVIEW -->
+  <div class="preview-wrap">
+    <div class="preview-chrome">
+      <div class="preview-bar">
+        <div class="preview-dots">
+          <div class="pdot"></div><div class="pdot"></div><div class="pdot"></div>
+        </div>
+        <div class="preview-url">leadmap-omega.vercel.app</div>
+      </div>
+      <div class="preview-inner">
+        <!-- Mock CRM -->
+        <div class="mock-crm">
+          <!-- Sidebar -->
+          <div class="mock-sidebar">
+            <div class="mock-logo"><div class="mock-logo-dot"></div>LeadMap</div>
+            <div class="mock-section-title">Type</div>
+            <div class="mock-filter active"><div class="mock-fdot" style="background:#8896B0"></div>Tous<span class="mock-fcnt">75</span></div>
+            <div class="mock-filter"><div class="mock-fdot" style="background:#3B7BF6"></div>Cliniques<span class="mock-fcnt">58</span></div>
+            <div class="mock-filter"><div class="mock-fdot" style="background:#F472B6"></div>Instituts<span class="mock-fcnt">17</span></div>
+            <div class="mock-section-title" style="margin-top:14px">Statut</div>
+            <div class="mock-filter"><div class="mock-fdot" style="background:#4ADE80"></div>Client actif<span class="mock-fcnt">1</span></div>
+            <div class="mock-filter"><div class="mock-fdot" style="background:#8B6BB3"></div>Proposition<span class="mock-fcnt">3</span></div>
+            <div class="mock-filter"><div class="mock-fdot" style="background:#F0B429"></div>RDV planifié<span class="mock-fcnt">4</span></div>
+            <div class="mock-items">
+              <div class="mock-item"><div class="mock-av" style="background:#3B7BF6">FM</div><div class="mock-iinfo"><div class="mock-iname">Clinique Adonis</div><div class="mock-icity">Genève</div></div><div class="mock-sdot" style="background:#4ADE80"></div></div>
+              <div class="mock-item"><div class="mock-av" style="background:#F472B6">DI</div><div class="mock-iinfo"><div class="mock-iname">Space of Time</div><div class="mock-icity">Morges</div></div><div class="mock-sdot" style="background:#8B6BB3"></div></div>
+              <div class="mock-item"><div class="mock-av" style="background:#3B7BF6">DS</div><div class="mock-iinfo"><div class="mock-iname">Dr. Sillard</div><div class="mock-icity">Genève</div></div><div class="mock-sdot" style="background:#8B6BB3"></div></div>
+            </div>
+          </div>
+          <!-- Map area -->
+          <div class="mock-map">
+            <div class="mock-map-bg"></div>
+            <div class="mock-map-grid"></div>
+            <!-- Header -->
+            <div class="mock-header">
+              <div class="mock-stat"><div class="mock-stat-num">75</div><div class="mock-stat-lbl">Prospects</div></div>
+              <div class="mock-stat"><div class="mock-stat-num gold">8</div><div class="mock-stat-lbl">En cours</div></div>
+              <div class="mock-stat"><div class="mock-stat-num green">1</div><div class="mock-stat-lbl">Clients</div></div>
+              <div class="mock-tabs">
+                <div class="mock-tab active">🗺 Carte</div>
+                <div class="mock-tab">📋 Pipeline</div>
+                <div class="mock-tab">📊 Liste</div>
+              </div>
+            </div>
+            <!-- Markers -->
+            <div class="mock-markers">
+              <div class="mock-marker blue" style="top:38%;left:42%">C</div>
+              <div class="mock-marker blue" style="top:42%;left:44%">C</div>
+              <div class="mock-marker blue" style="top:40%;left:46%">C</div>
+              <div class="mock-marker pink" style="top:36%;left:40%">I</div>
+              <div class="mock-marker blue" style="top:28%;left:55%">C</div>
+              <div class="mock-marker blue" style="top:48%;left:38%">C</div>
+              <div class="mock-marker pink" style="top:32%;left:50%">I</div>
+              <div class="mock-marker blue" style="top:44%;left:52%">C</div>
+              <div class="mock-marker blue" style="top:52%;left:45%">C</div>
+              <div class="mock-marker pink" style="top:56%;left:42%">I</div>
+            </div>
+            <!-- Legend -->
+            <div class="mock-legend">
+              <div class="mock-leg-item"><div class="mock-leg-dot" style="background:#3B7BF6"></div>Cliniques</div>
+              <div class="mock-leg-item"><div class="mock-leg-dot" style="background:#F472B6"></div>Instituts</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- INTEGRATIONS -->
+<div class="integrations-section">
+  <div class="int-inner">
+    <div class="int-title">Connecté à vos outils existants</div>
+    <div class="int-logos">
+      <div class="int-logo"><div class="int-logo-icon">📧</div>Gmail</div>
+      <div class="int-logo"><div class="int-logo-icon" style="background:rgba(255,255,255,.05);border-radius:8px">📸</div>Instagram</div>
+      <div class="int-logo"><div class="int-logo-icon">💼</div>LinkedIn</div>
+      <div class="int-logo"><div class="int-logo-icon">📅</div>Calendly</div>
+      <div class="int-logo"><div class="int-logo-icon">🗺</div>Google Maps</div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="section-label">Fonctionnalités</div>
+  <h2 class="section-title">Tout ce qu'il faut<br>pour prospecter vite.</h2>
+  <p class="section-sub">Un seul outil qui remplace votre Excel, vos notes vocales, et vos threads Gmail éparpillés.</p>
+
+  <div class="features-grid">
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(59,123,246,.15)">🗺</div>
+      <div class="feat-title">Carte interactive</div>
+      <div class="feat-desc">Visualisez tous vos prospects géolocalisés. Cliniques en bleu, instituts en rose. Cliquez sur un marqueur pour ouvrir la fiche complète.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(74,222,128,.1)">📧</div>
+      <div class="feat-title">Sync Gmail en temps réel</div>
+      <div class="feat-desc">Vos emails envoyés et reçus s'ajoutent automatiquement à l'historique de chaque prospect. Plus jamais de "j'avais écrit à qui déjà ?"</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(139,107,179,.15)">📋</div>
+      <div class="feat-title">Pipeline Kanban</div>
+      <div class="feat-desc">De "À contacter" à "Client actif" — glissez vos prospects d'une colonne à l'autre en un clic. Votre pipeline toujours à jour.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(240,180,41,.1)">⚡</div>
+      <div class="feat-title">Mises à jour temps réel</div>
+      <div class="feat-desc">Alimenté par Supabase Realtime. Ouvrez l'app depuis votre téléphone et votre Mac en même temps — tout se synchronise instantanément.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(244,114,182,.1)">📸</div>
+      <div class="feat-title">Instagram & LinkedIn</div>
+      <div class="feat-desc">Voyez qui vous suit, avec qui vous échangez en DM, et importez de nouveaux prospects directement depuis leur profil social. <span style="color:var(--accent);font-size:12px">Bientôt</span></div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon" style="background:rgba(59,123,246,.1)">🔒</div>
+      <div class="feat-title">Données isolées & sécurisées</div>
+      <div class="feat-desc">Chaque utilisateur voit uniquement ses propres données. Row Level Security activé sur toute la base. Conforme RGPD et nLPD.</div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing-section" id="pricing">
+  <div class="pricing-inner">
+    <div class="section-label" style="text-align:center">Tarifs</div>
+    <h2 class="section-title" style="text-align:center;margin:0 auto 12px">Simple et transparent.</h2>
+    <p class="section-sub" style="margin:0 auto;text-align:center">Sans engagement. Annulez quand vous voulez.</p>
+
+    <div class="pricing-grid">
+      <!-- Solo -->
+      <div class="price-card">
+        <div class="price-name">Solo</div>
+        <div class="price-amount">39<span>€</span></div>
+        <div class="price-period">par mois</div>
+        <ul class="price-features">
+          <li>1 utilisateur</li>
+          <li>Jusqu'à 100 prospects</li>
+          <li>Carte interactive</li>
+          <li>Sync Gmail</li>
+          <li>Pipeline Kanban</li>
+          <li class="muted">Instagram & LinkedIn</li>
+          <li class="muted">White-label</li>
+        </ul>
+        <a href="https://leadmap-omega.vercel.app" class="price-btn outline">Commencer</a>
+      </div>
+      <!-- Agency — featured -->
+      <div class="price-card featured">
+        <div class="price-badge">Le plus populaire</div>
+        <div class="price-name">Agency</div>
+        <div class="price-amount">79<span>€</span></div>
+        <div class="price-period">par mois</div>
+        <ul class="price-features">
+          <li>3 utilisateurs</li>
+          <li>Prospects illimités</li>
+          <li>Carte interactive</li>
+          <li>Sync Gmail</li>
+          <li>Pipeline Kanban</li>
+          <li>Instagram & LinkedIn</li>
+          <li class="muted">White-label</li>
+        </ul>
+        <a href="https://leadmap-omega.vercel.app" class="price-btn filled">Commencer</a>
+      </div>
+      <!-- White-label -->
+      <div class="price-card">
+        <div class="price-name">White-label</div>
+        <div class="price-amount">149<span>€</span></div>
+        <div class="price-period">par mois</div>
+        <ul class="price-features">
+          <li>Utilisateurs illimités</li>
+          <li>Prospects illimités</li>
+          <li>Carte interactive</li>
+          <li>Sync Gmail</li>
+          <li>Pipeline Kanban</li>
+          <li>Instagram & LinkedIn</li>
+          <li>Votre logo & domaine</li>
+        </ul>
+        <a href="#waitlist" class="price-btn outline">Nous contacter</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WAITLIST -->
+<section class="waitlist-section" id="waitlist">
+  <div class="waitlist-inner">
+    <h2 class="waitlist-title">Prêt à prospecter<br><em style="color:var(--accent);font-style:normal">autrement ?</em></h2>
+    <p class="waitlist-sub">Rejoignez les premiers utilisateurs et accédez à LeadMap gratuitement pendant 14 jours.</p>
+    <div class="waitlist-form">
+      <input type="email" class="waitlist-input" placeholder="votre@email.com" id="wl-email">
+      <button class="waitlist-btn" onclick="joinWaitlist()">Accès gratuit →</button>
+    </div>
+    <div class="waitlist-note" id="wl-msg">Aucune carte de crédit requise · Annulation à tout moment</div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<div style="border-top:1px solid var(--line);padding:0 40px">
+  <footer>
+    <div class="footer-logo">LeadMap</div>
+    <div class="footer-links">
+      <a href="#features">Fonctionnalités</a>
+      <a href="#pricing">Tarifs</a>
+      <a href="https://leadmap-omega.vercel.app">App</a>
+      <a href="mailto:hello@getleadmap.com">Contact</a>
+    </div>
+    <div style="font-size:12px;color:var(--muted)">© 2026 LeadMap</div>
+  </footer>
+</div>
+
+<script>
+// Nav scroll effect
+window.addEventListener('scroll',()=>{
+  document.getElementById('nav').classList.toggle('scrolled',window.scrollY>40)
+})
+
+// Waitlist
+function joinWaitlist(){
+  const email=document.getElementById('wl-email').value.trim()
+  const msg=document.getElementById('wl-msg')
+  if(!email||!email.includes('@')){
+    msg.textContent='Veuillez entrer un email valide.'
+    msg.style.color='#F87171'
+    return
+  }
+  msg.textContent='🎉 Parfait ! On vous contacte très bientôt.'
+  msg.style.color='#4ADE80'
+  document.getElementById('wl-email').value=''
+}
+
+// Animate on scroll
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)'}
+  })
+},{threshold:.1})
+
+document.querySelectorAll('.feat-card,.price-card').forEach(el=>{
+  el.style.opacity='0';el.style.transform='translateY(20px)';el.style.transition='opacity .5s ease, transform .5s ease'
+  obs.observe(el)
+})
+</script>
+</body>
+</html>
