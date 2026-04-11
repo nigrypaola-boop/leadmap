@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clinic Boost — CRM</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0D1B2A;--navy-mid:#1A2D3F;--navy-soft:#243547;
+  --blue-clinic:#4A8FD4;--blue-light:#A8CBF0;
+  --pink-inst:#E8849A;--pink-light:#F7C5CF;
+  --gold:#C9A96E;--gold-light:#E8D5B0;
+  --white:#F8F4F0;--cream:#EFE9E1;
+  --text-main:#1A2D3F;--text-soft:#5A7A90;--text-muted:#8FA5B5;
+  --radius:10px;--shadow:0 4px 24px rgba(13,27,42,.12);--shadow-sm:0 2px 8px rgba(13,27,42,.08)
+}
+body{font-family:'Outfit',sans-serif;background:var(--navy);color:var(--text-main);height:100vh;overflow:hidden}
+
+/* ── LOADING ── */
+#loading{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;z-index:9999;transition:opacity .4s}
+#loading.gone{opacity:0;pointer-events:none}
+.ld-logo{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:var(--white);display:flex;align-items:center;gap:12px}
+.ld-spin{width:28px;height:28px;border:2px solid rgba(255,255,255,.1);border-top-color:var(--blue-clinic);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── LOGIN ── */
+#login-screen{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:var(--navy);background-image:radial-gradient(ellipse at 30% 50%,rgba(74,143,212,.08),transparent 60%),radial-gradient(ellipse at 70% 30%,rgba(201,169,110,.06),transparent 50%)}
+.lcard{background:var(--navy-mid);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:40px 36px;width:380px;box-shadow:0 24px 64px rgba(0,0,0,.4)}
+.l-logo{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:var(--white);letter-spacing:.04em;display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.logo-dot{width:10px;height:10px;border-radius:50%;background:var(--gold);flex-shrink:0}
+.l-sub{font-size:13px;color:var(--text-muted);margin-bottom:24px}
+.l-divider{border:none;border-top:1px solid rgba(255,255,255,.06);margin:0 0 20px}
+.l-label{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);font-weight:500;margin-bottom:6px;display:block}
+.l-input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:11px 14px;font-family:'Outfit',sans-serif;font-size:14px;color:var(--white);margin-bottom:14px;outline:none;transition:border-color .2s}
+.l-input::placeholder{color:var(--text-muted)}
+.l-input:focus{border-color:var(--blue-clinic)}
+.l-btn{width:100%;background:var(--blue-clinic);color:white;border:none;border-radius:8px;padding:12px;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;margin-top:4px}
+.l-btn:hover{background:#3a7fc4}
+.l-btn:disabled{opacity:.6;cursor:not-allowed}
+.l-toggle{width:100%;background:transparent;border:none;color:var(--text-muted);font-family:'Outfit',sans-serif;font-size:13px;cursor:pointer;margin-top:12px;padding:6px;transition:color .2s}
+.l-toggle:hover{color:var(--white)}
+.l-msg{font-size:12px;padding:10px 12px;border-radius:8px;margin-bottom:14px;display:none}
+.l-msg.err{background:rgba(217,83,79,.15);border:1px solid rgba(217,83,79,.3);color:#F4A0A0}
+.l-msg.ok{background:rgba(76,175,80,.15);border:1px solid rgba(76,175,80,.3);color:#A0F4A0}
+
+/* ── APP ── */
+#app{display:none;flex-direction:column;height:100vh;background:var(--cream)}
+
+/* HEADER */
+header{background:var(--navy);padding:0 24px;display:flex;align-items:center;gap:24px;height:58px;flex-shrink:0;box-shadow:0 2px 16px rgba(0,0,0,.25);z-index:100}
+.logo{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--white);letter-spacing:.04em;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.nav-tabs{display:flex;gap:4px}
+.tab-btn{padding:7px 16px;border:none;border-radius:6px;cursor:pointer;font-family:'Outfit',sans-serif;font-size:13px;font-weight:500;transition:all .2s;background:transparent;color:var(--text-muted);display:flex;align-items:center;gap:7px}
+.tab-btn:hover{background:rgba(255,255,255,.08);color:var(--white)}
+.tab-btn.active{background:var(--navy-soft);color:var(--white)}
+.hright{margin-left:auto;display:flex;align-items:center;gap:16px;flex-shrink:0}
+.rt-badge{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted)}
+.rt-dot{width:6px;height:6px;border-radius:50%;background:#4CAF50;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.hstats{display:flex;gap:18px}
+.hstat{text-align:center}
+.hnum{font-size:16px;font-weight:600;color:var(--white);line-height:1}
+.hlbl{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em}
+.hnum.gold{color:var(--gold)}.hnum.rose{color:var(--pink-light)}
+.upill{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:99px;padding:5px 12px 5px 8px}
+.uav{width:24px;height:24px;border-radius:50%;background:var(--blue-clinic);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white}
+.uemail{font-size:12px;color:var(--text-soft)}
+.out-btn{background:transparent;border:none;color:var(--text-muted);font-size:11px;cursor:pointer;font-family:'Outfit',sans-serif;padding:4px 8px;border-radius:4px;transition:all .15s}
+.out-btn:hover{color:var(--white);background:rgba(255,255,255,.06)}
+
+/* MAIN */
+.main{display:flex;flex:1;overflow:hidden;position:relative}
+
+/* SIDEBAR */
+.sidebar{width:232px;background:var(--navy-mid);flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;border-right:1px solid rgba(255,255,255,.06)}
+.sb-sec{padding:14px;border-bottom:1px solid rgba(255,255,255,.06)}
+.sb-title{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--text-muted);margin-bottom:8px;font-weight:500}
+.fbtn{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:6px;cursor:pointer;transition:all .15s;border:none;background:transparent;width:100%;text-align:left;color:var(--text-soft);font-family:'Outfit',sans-serif;font-size:12px}
+.fbtn:hover{background:rgba(255,255,255,.06);color:var(--white)}
+.fbtn.active{background:rgba(255,255,255,.1);color:var(--white)}
+.fdot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.fcnt{margin-left:auto;font-size:11px;font-weight:600;color:var(--text-muted);background:rgba(255,255,255,.08);padding:1px 6px;border-radius:99px}
+.mini-list{flex:1;overflow-y:auto;padding:6px}
+.mini-list::-webkit-scrollbar{width:3px}
+.mini-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+.mitem{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:7px;cursor:pointer;transition:all .15s;margin-bottom:2px}
+.mitem:hover{background:rgba(255,255,255,.07)}
+.mitem.sel{background:rgba(74,143,212,.2)}
+.mav{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;flex-shrink:0}
+.minfo{flex:1;min-width:0}
+.mname{font-size:11px;font-weight:500;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mcity{font-size:10px;color:var(--text-muted)}
+.msdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* CONTENT */
+.content{flex:1;position:relative;overflow:hidden}
+
+/* MAP */
+#map-view{width:100%;height:100%;position:relative}
+#map{width:100%;height:100%}
+.marker-wrap{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;box-shadow:0 3px 10px rgba(0,0,0,.3);cursor:pointer;transition:transform .2s}
+.marker-wrap:hover{transform:scale(1.18)}
+.marker-wrap.clinique{background:var(--blue-clinic);border:2.5px solid rgba(255,255,255,.5)}
+.marker-wrap.institut{background:var(--pink-inst);border:2.5px solid rgba(255,255,255,.5)}
+.marker-letter{font-family:'Outfit',sans-serif;font-size:12px;font-weight:700;color:white}
+.map-legend{position:absolute;bottom:24px;left:16px;background:var(--navy);border-radius:var(--radius);padding:12px 16px;box-shadow:var(--shadow);z-index:500}
+.leg-title{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);font-weight:500;margin-bottom:8px}
+.leg-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--white);margin-bottom:4px}
+.leg-dot{width:11px;height:11px;border-radius:50%}
+
+/* PIPELINE */
+#pipeline-view{display:none;height:100%;overflow-x:auto;overflow-y:hidden;padding:18px;gap:12px;background:var(--cream)}
+#pipeline-view.active{display:flex}
+.pcol{min-width:210px;max-width:210px;display:flex;flex-direction:column;gap:8px;height:100%}
+.phdr{padding:9px 13px;border-radius:7px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.phdrtitle{font-size:11px;font-weight:600;color:white}
+.pcnt{background:rgba(255,255,255,.25);color:white;font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px}
+.pcards{display:flex;flex-direction:column;gap:7px;overflow-y:auto;flex:1}
+.pcards::-webkit-scrollbar{width:3px}
+.pcard{background:white;border-radius:8px;padding:11px;box-shadow:var(--shadow-sm);cursor:pointer;transition:all .2s;border-left:3px solid transparent}
+.pcard:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.cname{font-size:12px;font-weight:600;color:var(--text-main);margin-bottom:2px}
+.ccity{font-size:11px;color:var(--text-muted);margin-bottom:7px}
+.cpack{font-size:10px;font-weight:600;text-transform:uppercase;padding:2px 6px;border-radius:4px;background:var(--cream);color:var(--text-soft);display:inline-block}
+.ctbadge{float:right;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:white}
+
+/* LIST */
+#list-view{display:none;height:100%;overflow:hidden;flex-direction:column;background:var(--cream);padding:18px;gap:14px}
+#list-view.active{display:flex}
+.lhdr{display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ltitle{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--navy)}
+.sbox{display:flex;align-items:center;background:white;border-radius:8px;padding:7px 13px;gap:8px;box-shadow:var(--shadow-sm)}
+.sbox input{border:none;outline:none;font-family:'Outfit',sans-serif;font-size:13px;color:var(--text-main);background:transparent;width:180px}
+.sbox input::placeholder{color:var(--text-muted)}
+.ltable-wrap{flex:1;overflow-y:auto;border-radius:var(--radius);box-shadow:var(--shadow-sm);background:white}
+.ltable-wrap::-webkit-scrollbar{width:4px}
+.ltable-wrap::-webkit-scrollbar-thumb{background:var(--cream);border-radius:4px}
+table{width:100%;border-collapse:collapse}
+thead{position:sticky;top:0;background:var(--navy);z-index:10}
+th{padding:11px 14px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);white-space:nowrap}
+td{padding:11px 14px;font-size:13px;border-bottom:1px solid var(--cream);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr{cursor:pointer;transition:background .15s}
+tbody tr:hover{background:#F9F7F5}
+.tbadge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:99px}
+.tbadge.clinique{background:rgba(74,143,212,.12);color:var(--blue-clinic)}
+.tbadge.institut{background:rgba(232,132,154,.12);color:var(--pink-inst)}
+.sbadge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;padding:3px 8px;border-radius:99px;white-space:nowrap}
+.sbadge .sd{width:6px;height:6px;border-radius:50%}
+
+/* PANEL */
+.panel{position:absolute;top:0;right:0;width:360px;height:100%;background:white;box-shadow:-4px 0 32px rgba(13,27,42,.18);z-index:600;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .35s cubic-bezier(.22,1,.36,1);overflow:hidden}
+.panel.open{transform:translateX(0)}
+.ptop{padding:18px 20px 14px;background:var(--navy);flex-shrink:0;position:relative}
+.pclose{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.1);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:16px;transition:all .15s}
+.pclose:hover{background:rgba(255,255,255,.2);color:white}
+.ptybadge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;padding:3px 9px;border-radius:99px;margin-bottom:8px}
+.ptybadge.clinique{background:rgba(74,143,212,.25);color:var(--blue-light)}
+.ptybadge.institut{background:rgba(232,132,154,.25);color:var(--pink-light)}
+.pname{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:white;line-height:1.2;margin-bottom:3px}
+.pcity-lbl{font-size:12px;color:var(--text-muted)}
+.pbody{flex:1;overflow-y:auto;padding:0 18px 18px}
+.pbody::-webkit-scrollbar{width:3px}
+.pbody::-webkit-scrollbar-thumb{background:var(--cream);border-radius:3px}
+.psec{padding:14px 0;border-bottom:1px solid var(--cream)}
+.psec:last-child{border-bottom:none}
+.pstitle{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);font-weight:600;margin-bottom:10px}
+.ccard{display:flex;align-items:center;gap:11px;padding:11px;background:var(--cream);border-radius:8px}
+.cav{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0}
+.cname2{font-size:13px;font-weight:600;color:var(--text-main)}
+.crole{font-size:11px;color:var(--text-soft);margin-bottom:5px}
+.clink{font-size:11px;color:var(--blue-clinic);text-decoration:none}
+.clink:hover{text-decoration:underline}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;background:var(--cream);border-radius:8px;margin-bottom:8px}
+.srbl{font-size:12px;color:var(--text-soft)}
+.ssel{font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;border:none;background:transparent;cursor:pointer;color:var(--text-main);outline:none}
+.pkbadge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:5px;font-size:11px;font-weight:600;background:var(--navy);color:var(--gold-light)}
+.ntxt{font-size:13px;color:var(--text-soft);line-height:1.6;background:var(--cream);padding:11px;border-radius:8px;font-style:italic}
+.hitem{display:flex;gap:10px;padding:6px 0}
+.hline{display:flex;flex-direction:column;align-items:center;flex-shrink:0;gap:2px}
+.hdot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.hbar{width:2px;flex:1;background:var(--cream);min-height:14px}
+.hitem:last-child .hbar{display:none}
+.hdate{font-size:10px;color:var(--text-muted);font-weight:500;white-space:nowrap;margin-top:3px}
+.hact{font-size:12px;color:var(--text-soft);line-height:1.5}
+.pactions{display:flex;gap:7px;flex-wrap:wrap;margin-top:4px}
+.abtn{display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:7px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;border:none}
+.abtn.pri{background:var(--navy);color:white}
+.abtn.pri:hover{background:var(--navy-soft)}
+.abtn.sec{background:var(--cream);color:var(--text-main)}
+.abtn.sec:hover{background:#E5DDD4}
+
+/* Leaflet */
+.leaflet-popup-content-wrapper{border-radius:8px;padding:0;overflow:hidden;box-shadow:var(--shadow);font-family:'Outfit',sans-serif}
+.leaflet-popup-content{margin:0;min-width:180px}
+.popup-inner{padding:12px 14px}
+.popup-name{font-weight:600;font-size:13px;color:var(--text-main);margin-bottom:2px}
+.popup-city{font-size:11px;color:var(--text-muted);margin-bottom:6px}
+.popup-btn{font-size:11px;font-weight:600;color:var(--blue-clinic);cursor:pointer;background:none;border:none;padding:0;font-family:'Outfit',sans-serif}
+.popup-btn:hover{text-decoration:underline}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--navy);color:white;padding:11px 18px;border-radius:8px;font-size:13px;box-shadow:var(--shadow);z-index:9999;transform:translateY(60px);opacity:0;transition:all .3s cubic-bezier(.22,1,.36,1)}
+.toast.show{transform:translateY(0);opacity:1}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="ld-logo"><div class="logo-dot"></div>Clinic Boost</div>
+  <div class="ld-spin"></div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="lcard">
+    <div class="l-logo"><div class="logo-dot"></div>Clinic Boost</div>
+    <div class="l-sub">CRM Prospects — Accès sécurisé</div>
+    <hr class="l-divider">
+    <div id="lmsg" class="l-msg"></div>
+    <label class="l-label">Email</label>
+    <input type="email" id="lemail" class="l-input" placeholder="paola@clinicboost.ch" onkeydown="if(event.key==='Enter')doAuth()">
+    <label class="l-label">Mot de passe</label>
+    <input type="password" id="lpass" class="l-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAuth()">
+    <button onclick="doAuth()" class="l-btn" id="lbtn">Se connecter</button>
+    <button onclick="toggleMode()" class="l-toggle" id="ltoggle">Pas encore de compte ? Créer un accès</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="logo"><div class="logo-dot"></div>Clinic Boost<span style="font-size:11px;color:var(--text-muted);font-weight:400;font-family:'Outfit',sans-serif;margin-left:4px">CRM</span></div>
+    <nav class="nav-tabs">
+      <button class="tab-btn active" onclick="switchView('map')" id="tab-map">🗺 Carte</button>
+      <button class="tab-btn" onclick="switchView('pipeline')" id="tab-pipeline">📋 Pipeline</button>
+      <button class="tab-btn" onclick="switchView('list')" id="tab-list">📊 Liste</button>
+    </nav>
+    <div class="hright">
+      <div class="rt-badge"><div class="rt-dot"></div>Temps réel</div>
+      <div class="hstats">
+        <div class="hstat"><div class="hnum" id="st-tot">—</div><div class="hlbl">Prospects</div></div>
+        <div class="hstat"><div class="hnum gold" id="st-act">—</div><div class="hlbl">En cours</div></div>
+        <div class="hstat"><div class="hnum rose" id="st-rep">—</div><div class="hlbl">Réponses</div></div>
+      </div>
+      <div class="upill"><div class="uav" id="uav">P</div><div class="uemail" id="uem">—</div></div>
+      <button class="out-btn" onclick="doLogout()">Déconnexion</button>
+    </div>
+  </header>
+  <div class="main">
+    <aside class="sidebar">
+      <div class="sb-sec">
+        <div class="sb-title">Type</div>
+        <button class="fbtn active" onclick="filterType('all')" id="filter-all"><div class="fdot" style="background:var(--text-muted)"></div>Tous<span class="fcnt" id="cnt-all">—</span></button>
+        <button class="fbtn" onclick="filterType('clinique')" id="filter-clinique"><div class="fdot" style="background:var(--blue-clinic)"></div>Cliniques<span class="fcnt" id="cnt-cli">—</span></button>
+        <button class="fbtn" onclick="filterType('institut')" id="filter-institut"><div class="fdot" style="background:var(--pink-inst)"></div>Instituts<span class="fcnt" id="cnt-ins">—</span></button>
+      </div>
+      <div class="sb-sec"><div class="sb-title">Statut</div><div id="sfilt"></div></div>
+      <div style="padding:10px 14px 4px"><div class="sb-title">Prospects</div></div>
+      <div class="mini-list" id="mlist"></div>
+    </aside>
+    <div class="content">
+      <div id="map-view">
+        <div id="map"></div>
+        <div class="map-legend">
+          <div class="leg-title">Légende</div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--blue-clinic)"></div>Cliniques</div>
+          <div class="leg-item"><div class="leg-dot" style="background:var(--pink-inst)"></div>Instituts</div>
+        </div>
+      </div>
+      <div id="pipeline-view"></div>
+      <div id="list-view">
+        <div class="lhdr">
+          <div class="ltitle">Tous les prospects</div>
+          <div class="sbox"><span style="color:var(--text-muted);font-size:14px">🔍</span><input type="text" placeholder="Rechercher…" id="sinput" oninput="filterList()"></div>
+        </div>
+        <div class="ltable-wrap">
+          <table><thead><tr><th>Établissement</th><th>Ville</th><th>Type</th><th>Contact</th><th>Statut</th><th>Pack</th></tr></thead>
+          <tbody id="ltbody"></tbody></table>
+        </div>
+      </div>
+      <div class="panel" id="panel">
+        <div class="ptop">
+          <button class="pclose" onclick="closePanel()">✕</button>
+          <div class="ptybadge" id="ptyb">—</div>
+          <div class="pname" id="pnm">—</div>
+          <div class="pcity-lbl" id="pcit">—</div>
+        </div>
+        <div class="pbody" id="pbody"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+// ── CONFIG ─────────────────────────────────────────────────────────────────
+const { createClient } = supabase
+const db = createClient(
+  'https://ppaprccfyailecueoezp.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwYXByY2NmeWFpbGVjdWVvZXpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTY0NTksImV4cCI6MjA5MTQzMjQ1OX0.trUSIw2yhH-NIkDxWQsBOXfmduNr090uwpZzxR77dnk'
+)
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let prospects=[], currentUser=null, currentView='map'
+let typeFilter='all', statusFilter='all', selectedId=null
+let leafletMap=null, markers={}, rtChannel=null, isSignup=false
+
+// ── STATUTS ────────────────────────────────────────────────────────────────
+const ST={
+  a_contacter:         {label:'À contacter',         color:'#6B8EA8',bg:'rgba(107,142,168,.12)'},
+  email_envoye:        {label:'Email envoyé',         color:'#C9A96E',bg:'rgba(201,169,110,.12)'},
+  rdv_planifie:        {label:'RDV planifié',         color:'#E8A44A',bg:'rgba(232,164,74,.12)'},
+  rdv_effectue:        {label:'RDV effectué',         color:'#4A8FD4',bg:'rgba(74,143,212,.12)'},
+  proposition_envoyee: {label:'Proposition envoyée',  color:'#8B6BB3',bg:'rgba(139,107,179,.12)'},
+  client_actif:        {label:'Client actif ✓',       color:'#4CAF50',bg:'rgba(76,175,80,.12)'},
+  perdu:               {label:'Non intéressé',        color:'#D9534F',bg:'rgba(217,83,79,.12)'},
+}
+
+// ── DONNÉES INITIALES (depuis Gmail) ──────────────────────────────────────
+const SEED=[
+  {nom:'Clinique Adonis',type:'clinique',ville:'Genève',lat:46.197,lng:6.139,statut:'proposition_envoyee',pack:'Essentiel',
+   contacts:[{prenom:'Florent',nom:'Moullet',role:'Directeur',email:'info@clinique-adonis.ch',tel:'+41 22 798 99 44',initiales:'FM',color:'#4A8FD4'}],
+   notes:'Très avancé. A répondu 3× rapidement. Questionné le prix ("1200 à 2200 CHF ?"). Proposition + mockup Instagram envoyés le 27 mars. Recap le 3 avril. Relancer par téléphone.',
+   historique:[
+     {date:'18 mar.',action:'📧 Email prospection envoyé',reponse:false},
+     {date:'18 mar.',action:'✉️ Réponse Florent : "Dites moi ce que vous proposeriez"',reponse:true},
+     {date:'19 mar.',action:'✉️ Réponse : "1200 à 2200 CHF annuel ?"',reponse:true},
+     {date:'27 mar.',action:'📧 Proposition + mockup Instagram envoyés',reponse:false},
+     {date:'30 mar.',action:'✉️ Réponse : "Merci de me rappeler"',reponse:true},
+     {date:'3 avr.', action:'📧 Récapitulatif complet envoyé',reponse:false},
+   ]},
+  {nom:'Space of Time',type:'institut',ville:'Morges',lat:46.509,lng:6.499,statut:'rdv_planifie',pack:'—',
+   contacts:[{prenom:'Dian',nom:'',role:'Fondatrice',email:'contact@spaceoftime.ch',tel:'—',initiales:'DI',color:'#E8849A'}],
+   notes:'Très intéressée dès le 1er email. RDV fixé le 26 mars à 17h, annulé le jour même. À reprogrammer en priorité.',
+   historique:[
+     {date:'18 mar.',action:'📧 Email envoyé — moderniser présence digitale',reponse:false},
+     {date:'18 mar.',action:'✉️ Réponse Dian : "Cela m\'intéresse. Quel prix ?"',reponse:true},
+     {date:'23 mar.',action:'📧 Confirmation RDV 26 mars 17h',reponse:false},
+     {date:'25 mar.',action:'✉️ Dian annule — "j\'ai un empêchement"',reponse:true},
+   ]},
+  {nom:'Dr. Sillard — Esthétique Médicale',type:'clinique',ville:'Suisse romande',lat:46.82,lng:6.95,statut:'proposition_envoyee',pack:'One-shot',
+   contacts:[{prenom:'Dr.',nom:'Sillard',role:'Médecin esthétique',email:'info@esthetique-medicale.ch',tel:'—',initiales:'DS',color:'#4A8FD4'}],
+   notes:'"Ravi d\'avoir échangé ce matin." Échange tél le 9 avril. Offre : collecte avis Google 150 CHF/mois + Google Ads.',
+   historique:[
+     {date:'9 avr.',action:'📞 Échange téléphonique — très réceptif',reponse:true},
+     {date:'9 avr.',action:'📧 Offre sur mesure envoyée',reponse:false},
+   ]},
+  {nom:'EstheMedis',type:'clinique',ville:'Nyon',lat:46.383,lng:6.233,statut:'rdv_effectue',pack:'—',
+   contacts:[{prenom:'Dr.',nom:'Brandt',role:'Directeur médical',email:'info@emedis.ch',tel:'—',initiales:'DB',color:'#4A8FD4'}],
+   notes:'Rencontre physique à Nyon. PDF + présentation envoyés le 6 mars "comme évoqué". Suivi le 18 mars — pas de retour. À relancer.',
+   historique:[
+     {date:'av. 6 mar.',action:'🤝 Rencontre physique à Nyon',reponse:true},
+     {date:'6 mar.',action:'📧 Proposition + PDF envoyés',reponse:false},
+     {date:'18 mar.',action:'📧 Suivi — "Suite à notre échange à Nyon"',reponse:false},
+   ]},
+  {nom:'Clinique Nescens',type:'clinique',ville:'Genève',lat:46.219,lng:6.142,statut:'email_envoye',pack:'—',
+   contacts:[{prenom:'—',nom:'—',role:'Direction',email:'info@nescens.com',tel:'—',initiales:'CN',color:'#4A8FD4'}],
+   notes:'Clinique premium genevoise. Email le 18 mars, pas de réponse.',
+   historique:[{date:'18 mar.',action:'📧 Email prospection envoyé',reponse:false}]},
+  {nom:'Cleage Clinic',type:'clinique',ville:'Genève',lat:46.205,lng:6.15,statut:'email_envoye',pack:'—',
+   contacts:[{prenom:'M.',nom:'Cohen',role:'Directeur',email:'contact@cleageclinic.com',tel:'—',initiales:'OC',color:'#4A8FD4'}],
+   notes:'34k abonnés Instagram. Email axé cohérence visuelle.',
+   historique:[{date:'18 mar.',action:'📧 Email — 34k abonnés Instagram',reponse:false}]},
+  {nom:'Aura Beauty',type:'clinique',ville:'Genève',lat:46.19,lng:6.13,statut:'email_envoye',pack:'—',
+   contacts:[{prenom:'Dr.',nom:'Draghiciu',role:'Directrice médicale',email:'contact@aurabeauty.ch',tel:'—',initiales:'AD',color:'#4A8FD4'}],
+   notes:'Site élégant, Instagram ne reflète pas la qualité.',
+   historique:[{date:'18 mar.',action:'📧 Email — décalage site/Instagram',reponse:false}]},
+  {nom:'S Plastic Surgery',type:'clinique',ville:'Genève',lat:46.203,lng:6.147,statut:'email_envoye',pack:'—',
+   contacts:[{prenom:'Dr.',nom:'Schaakxs',role:'Chirurgien plasticien',email:'info@splasticsurgery.ch',tel:'—',initiales:'DS',color:'#4A8FD4'}],
+   notes:'Site professionnel. Fort potentiel Instagram.',
+   historique:[{date:'18 mar.',action:'📧 Email prospection envoyé',reponse:false}]},
+  {nom:'Detox Suisse',type:'clinique',ville:'Genève',lat:46.21,lng:6.156,statut:'email_envoye',pack:'—',
+   contacts:[{prenom:'Gabriela',nom:'',role:'Responsable',email:'info@detoxsuisse.com',tel:'—',initiales:'GB',color:'#4A8FD4'}],
+   notes:'Beaux contenus, identité peu cohérente. Réponse auto reçue.',
+   historique:[
+     {date:'18 mar.',action:'📧 Email prospection envoyé',reponse:false},
+     {date:'18 mar.',action:'↩️ Réponse automatique reçue',reponse:true},
+   ]},
+  {nom:'EHC Morges — Chirurgie Plastique',type:'clinique',ville:'Morges',lat:46.507,lng:6.502,statut:'email_envoye',pack:'—',
+   contacts:[{prenom:'—',nom:'—',role:'Secrétariat',email:'chirurgie.plastique.reconstructive@ehc.vd.ch',tel:'—',initiales:'EH',color:'#4A8FD4'}],
+   notes:'Hôpital public. Réponse auto secrétariat reçue.',
+   historique:[
+     {date:'18 mar.',action:'📧 Email envoyé',reponse:false},
+     {date:'18 mar.',action:'↩️ Réponse auto secrétariat',reponse:true},
+   ]},
+  {nom:'Centre Esthétique des Canuts',type:'clinique',ville:'Lyon (FR)',lat:45.767,lng:4.834,statut:'email_envoye',pack:'—',
+   contacts:[{prenom:'—',nom:'—',role:'Direction',email:'centreesthetiquedescanuts@gmail.com',tel:'—',initiales:'CE',color:'#4A8FD4'}],
+   notes:'Prospect France / Lyon. Email le 10 avril.',
+   historique:[{date:'10 avr.',action:'📧 Email prospection envoyé',reponse:false}]},
+  {nom:'Dr. Laval',type:'clinique',ville:'France',lat:46.1,lng:6.3,statut:'email_envoye',pack:'—',
+   contacts:[{prenom:'Dr.',nom:'Laval',role:'Médecin esthétique',email:'contact@dr-laval.com',tel:'—',initiales:'DL',color:'#4A8FD4'}],
+   notes:'Email le 10 avril. Profil Instagram analysé avant envoi.',
+   historique:[{date:'10 avr.',action:'📧 Email — augmenter nombre de RDV',reponse:false}]},
+  {nom:'My Clinic',type:'clinique',ville:'Genève',lat:46.216,lng:6.16,statut:'perdu',pack:'—',
+   contacts:[{prenom:'Dr. Mermod',nom:'& Dr. Monnier',role:'Chirurgiennes',email:'info@my-clinique.ch',tel:'—',initiales:'MM',color:'#4A8FD4'}],
+   notes:'Refus clair via secrétariat (Tiffany) le 19 mars. À relancer en septembre.',
+   historique:[
+     {date:'18 mar.',action:'📧 Email prospection envoyé',reponse:false},
+     {date:'19 mar.',action:'✉️ Refus — "non intéressées" (Tiffany)',reponse:true},
+   ]},
+]
+
+// ── AUTH ───────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const { data:{session} } = await db.auth.getSession()
+    if (session?.user) { currentUser=session.user; await showApp() }
+    else showLogin()
+  } catch { showLogin() }
+
+  db.auth.onAuthStateChange(async (_,session) => {
+    if (session?.user) { currentUser=session.user; await showApp() }
+    else { currentUser=null; showLogin() }
+  })
+}
+
+function showLogin() {
+  document.getElementById('loading').classList.add('gone')
+  document.getElementById('login-screen').style.display='flex'
+  document.getElementById('app').style.display='none'
+}
+
+function toggleMode() {
+  isSignup=!isSignup
+  document.getElementById('lbtn').textContent=isSignup?'Créer mon compte':'Se connecter'
+  document.getElementById('ltoggle').textContent=isSignup?'Déjà un compte ? Se connecter':'Pas encore de compte ? Créer un accès'
+  document.getElementById('lmsg').style.display='none'
+}
+
+function setMsg(txt,ok=false) {
+  const el=document.getElementById('lmsg')
+  el.textContent=txt; el.className='l-msg '+(ok?'ok':'err'); el.style.display='block'
+}
+
+async function doAuth() {
+  const email=document.getElementById('lemail').value.trim()
+  const pass=document.getElementById('lpass').value
+  if(!email||!pass){setMsg('Veuillez remplir tous les champs');return}
+  const btn=document.getElementById('lbtn')
+  btn.disabled=true; btn.textContent='...'
+  try {
+    const fn=isSignup
+      ? ()=>db.auth.signUp({email,password:pass})
+      : ()=>db.auth.signInWithPassword({email,password:pass})
+    const {error}=await fn()
+    if(error) throw error
+    if(isSignup) setMsg('Compte créé ! Vérifiez votre email.',true)
+  } catch(e) {
+    setMsg(e.message==='Invalid login credentials'?'Email ou mot de passe incorrect':e.message)
+  } finally {
+    btn.disabled=false
+    btn.textContent=isSignup?'Créer mon compte':'Se connecter'
+  }
+}
+
+async function doLogout() {
+  if(rtChannel) db.removeChannel(rtChannel)
+  await db.auth.signOut()
+}
+
+// ── SHOW APP ───────────────────────────────────────────────────────────────
+async function showApp() {
+  document.getElementById('login-screen').style.display='none'
+  document.getElementById('app').style.display='flex'
+  document.getElementById('loading').classList.add('gone')
+  const em=currentUser.email
+  document.getElementById('uem').textContent=em
+  document.getElementById('uav').textContent=em[0].toUpperCase()
+  await loadData()
+  subscribeRT()
+  await new Promise(r=>setTimeout(r,100))
+  initMap()
+}
+
+// ── DATA ───────────────────────────────────────────────────────────────────
+async function loadData() {
+  const {data,error}=await db.from('prospects').select('*').eq('user_id',currentUser.id).order('created_at')
+  if(error){console.error(error);return}
+  if(!data||!data.length) { await seedData(); return }
+  prospects=data; refresh()
+}
+
+async function seedData() {
+  showToast('⚡ Chargement de vos données Gmail...')
+  const rows=SEED.map(p=>({...p,user_id:currentUser.id}))
+  const {data,error}=await db.from('prospects').insert(rows).select()
+  if(error){console.error(error);showToast('Erreur lors du chargement');return}
+  prospects=data; refresh()
+  showToast('✅ 13 prospects chargés depuis Gmail !')
+}
+
+async function saveStatus(id,statut) {
+  const {error}=await db.from('prospects').update({statut}).eq('id',id).eq('user_id',currentUser.id)
+  if(error){showToast('Erreur lors de la mise à jour');return}
+  const idx=prospects.findIndex(p=>p.id===id)
+  if(idx!==-1) prospects[idx].statut=statut
+  showToast('✓ '+ST[statut].label)
+  refresh()
+  setTimeout(()=>openPanel(id),50)
+}
+
+// ── REALTIME ───────────────────────────────────────────────────────────────
+function subscribeRT() {
+  if(rtChannel) db.removeChannel(rtChannel)
+  rtChannel=db.channel('crm-rt')
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'prospects',filter:`user_id=eq.${currentUser.id}`},p=>{
+      const idx=prospects.findIndex(x=>x.id===p.new.id)
+      if(idx!==-1){prospects[idx]={...prospects[idx],...p.new};refresh();showToast('🔄 Mis à jour en temps réel')}
+    })
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'prospects',filter:`user_id=eq.${currentUser.id}`},p=>{
+      prospects.push(p.new);refresh()
+    })
+    .subscribe()
+}
+
+// ── HELPERS ────────────────────────────────────────────────────────────────
+function sbadge(s){const st=ST[s]||ST.a_contacter;return`<span class="sbadge" style="background:${st.bg};color:${st.color}"><span class="sd" style="background:${st.color}"></span>${st.label}</span>`}
+function tc(t){return t==='clinique'?'var(--blue-clinic)':'var(--pink-inst)'}
+function tl(t){return t==='clinique'?'Clinique':'Institut'}
+function tlt(t){return t==='clinique'?'C':'I'}
+function filt(){return prospects.filter(p=>(typeFilter==='all'||p.type===typeFilter)&&(statusFilter==='all'||p.statut===statusFilter))}
+
+// ── SIDEBAR ────────────────────────────────────────────────────────────────
+function updateStats(){
+  document.getElementById('st-tot').textContent=prospects.length
+  document.getElementById('st-act').textContent=prospects.filter(p=>['rdv_planifie','rdv_effectue','proposition_envoyee'].includes(p.statut)).length
+  document.getElementById('st-rep').textContent=prospects.filter(p=>(p.historique||[]).some(h=>h.reponse)).length
+  document.getElementById('cnt-all').textContent=prospects.length
+  document.getElementById('cnt-cli').textContent=prospects.filter(p=>p.type==='clinique').length
+  document.getElementById('cnt-ins').textContent=prospects.filter(p=>p.type==='institut').length
+}
+
+function buildSFilters(){
+  const el=document.getElementById('sfilt')
+  el.innerHTML=`<button class="fbtn active" onclick="filterStatus('all')" id="sf-all"><div class="fdot" style="background:var(--text-muted)"></div>Tous<span class="fcnt">${prospects.length}</span></button>`+
+    Object.entries(ST).map(([k,s])=>{
+      const n=prospects.filter(p=>p.statut===k).length
+      return n?`<button class="fbtn" onclick="filterStatus('${k}')" id="sf-${k}" style="font-size:11px"><div class="fdot" style="background:${s.color}"></div>${s.label}<span class="fcnt">${n}</span></button>`:''
+    }).join('')
+  document.getElementById(`sf-${statusFilter}`)?.classList.add('active')
+}
+
+function buildMini(){
+  document.getElementById('mlist').innerHTML=filt().map(p=>{
+    const s=ST[p.statut]||ST.a_contacter,c=p.contacts?.[0]||{}
+    return`<div class="mitem ${selectedId===p.id?'sel':''}" onclick="openPanel('${p.id}')">
+      <div class="mav" style="background:${tc(p.type)}">${c.initiales||'?'}</div>
+      <div class="minfo"><div class="mname">${p.nom}</div><div class="mcity">${p.ville}</div></div>
+      <div class="msdot" style="background:${s.color}"></div>
+    </div>`
+  }).join('')
+}
+
+function filterType(t){
+  typeFilter=t
+  document.querySelectorAll('[id^="filter-"]').forEach(b=>b.classList.remove('active'))
+  document.getElementById('filter-'+t)?.classList.add('active')
+  refresh()
+}
+function filterStatus(k){
+  statusFilter=k
+  document.querySelectorAll('[id^="sf-"]').forEach(b=>b.classList.remove('active'))
+  document.getElementById('sf-'+k)?.classList.add('active')
+  refresh()
+}
+
+// ── MAP ────────────────────────────────────────────────────────────────────
+function initMap(){
+  if(leafletMap){renderMarkers();return}
+  leafletMap=L.map('map',{center:[46.38,6.20],zoom:9})
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',subdomains:'abcd',maxZoom:19}).addTo(leafletMap)
+  renderMarkers()
+}
+function renderMarkers(){
+  if(!leafletMap)return
+  Object.values(markers).forEach(m=>leafletMap.removeLayer(m))
+  markers={}
+  filt().forEach(p=>{
+    if(!p.lat||!p.lng)return
+    const icon=L.divIcon({className:'',html:`<div class="marker-wrap ${p.type}"><span class="marker-letter">${tlt(p.type)}</span></div>`,iconSize:[32,32],iconAnchor:[16,32],popupAnchor:[0,-34]})
+    const mk=L.marker([p.lat,p.lng],{icon}).addTo(leafletMap)
+    mk.bindPopup(`<div class="popup-inner">
+      <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px"><div style="width:7px;height:7px;border-radius:50%;background:${tc(p.type)}"></div><span style="font-size:10px;font-weight:700;text-transform:uppercase;color:${tc(p.type)}">${tl(p.type)}</span></div>
+      <div class="popup-name">${p.nom}</div><div class="popup-city">📍 ${p.ville}</div>
+      <div style="margin:6px 0">${sbadge(p.statut)}</div>
+      <button class="popup-btn" onclick="openPanel('${p.id}')">Voir le profil →</button>
+    </div>`,{maxWidth:220})
+    mk.on('click',()=>openPanel(p.id))
+    markers[p.id]=mk
+  })
+}
+
+// ── PIPELINE ───────────────────────────────────────────────────────────────
+function buildPipeline(){
+  document.getElementById('pipeline-view').innerHTML=Object.entries(ST).map(([k,s])=>{
+    const cards=filt().filter(p=>p.statut===k)
+    return`<div class="pcol">
+      <div class="phdr" style="background:${s.color}"><span class="phdrtitle">${s.label}</span><span class="pcnt">${cards.length}</span></div>
+      <div class="pcards">${cards.map(p=>`<div class="pcard" onclick="openPanel('${p.id}')" style="border-left-color:${tc(p.type)}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between">
+          <div class="cname">${p.nom}</div><div class="ctbadge" style="background:${tc(p.type)}">${tlt(p.type)}</div>
+        </div>
+        <div class="ccity">${p.ville}</div>
+        ${p.pack&&p.pack!=='—'?`<div class="cpack">${p.pack}</div>`:''}
+        ${(p.historique||[]).some(h=>h.reponse)?'<div style="margin-top:6px;font-size:10px;color:#4CAF50;font-weight:600">✉️ A répondu</div>':''}
+      </div>`).join('')}</div>
+    </div>`
+  }).join('')
+}
+
+// ── LIST ───────────────────────────────────────────────────────────────────
+function buildList(){renderRows(filt())}
+function renderRows(list){
+  document.getElementById('ltbody').innerHTML=list.map(p=>{
+    const c=p.contacts?.[0]||{}
+    return`<tr onclick="openPanel('${p.id}')">
+      <td><span style="font-weight:600">${p.nom}</span></td>
+      <td style="color:var(--text-soft)">${p.ville}</td>
+      <td><span class="tbadge ${p.type}">${tl(p.type)}</span></td>
+      <td style="color:var(--text-soft)">${c.prenom||'—'} ${c.nom||''}</td>
+      <td>${sbadge(p.statut)}</td>
+      <td>${p.pack&&p.pack!=='—'?`<span class="pkbadge">${p.pack}</span>`:'<span style="color:var(--text-muted);font-size:12px">—</span>'}</td>
+    </tr>`
+  }).join('')
+}
+function filterList(){
+  const q=document.getElementById('sinput').value.toLowerCase()
+  renderRows(filt().filter(p=>p.nom.toLowerCase().includes(q)||p.ville.toLowerCase().includes(q)||(p.contacts?.[0]?.nom||'').toLowerCase().includes(q)))
+}
+
+// ── PANEL ──────────────────────────────────────────────────────────────────
+function openPanel(id){
+  const p=prospects.find(x=>x.id===id); if(!p)return
+  selectedId=id; buildMini()
+  const tb=document.getElementById('ptyb')
+  tb.className=`ptybadge ${p.type}`; tb.innerHTML=`${tlt(p.type)} ${tl(p.type)}`
+  document.getElementById('pnm').textContent=p.nom
+  document.getElementById('pcit').textContent=`📍 ${p.ville}`
+  const opts=Object.entries(ST).map(([k,s])=>`<option value="${k}" ${p.statut===k?'selected':''}>${s.label}</option>`).join('')
+  const hist=p.historique||[]
+  const hhtml=hist.map((h,i)=>`<div class="hitem">
+    <div class="hline"><div class="hdot" style="background:${h.reponse?'#4CAF50':'#4A8FD4'}"></div>${i<hist.length-1?'<div class="hbar"></div>':''}</div>
+    <div><div class="hdate">${h.date}</div><div class="hact">${h.action}</div></div>
+  </div>`).join('')
+  const c=p.contacts?.[0]||{}
+  document.getElementById('pbody').innerHTML=`
+    <div class="psec">
+      <div class="pstitle">Statut & Offre</div>
+      <div class="srow"><span class="srbl">Statut</span><select class="ssel" onchange="saveStatus('${p.id}',this.value)">${opts}</select></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 11px;background:var(--cream);border-radius:8px">
+        <span style="font-size:12px;color:var(--text-soft)">Pack envisagé</span>
+        <span class="pkbadge">${p.pack||'—'}</span>
+      </div>
+    </div>
+    <div class="psec">
+      <div class="pstitle">Contact</div>
+      <div class="ccard">
+        <div class="cav" style="background:${c.color||'#4A8FD4'}">${c.initiales||'?'}</div>
+        <div style="flex:1">
+          <div class="cname2">${c.prenom||'—'} ${c.nom||''}</div>
+          <div class="crole">${c.role||'—'}</div>
+          <a class="clink" href="mailto:${c.email||''}">✉️ ${c.email||'—'}</a>
+        </div>
+      </div>
+    </div>
+    <div class="psec">
+      <div class="pstitle">Notes</div>
+      <div class="ntxt">${p.notes||'Aucune note.'}</div>
+    </div>
+    <div class="psec">
+      <div class="pstitle">Historique Gmail</div>
+      ${hhtml||'<div style="font-size:12px;color:var(--text-muted)">Aucun historique.</div>'}
+    </div>
+    <div class="psec">
+      <div class="pstitle">Actions rapides</div>
+      <div class="pactions">
+        <a class="abtn pri" href="mailto:${c.email||''}">✉️ Envoyer un email</a>
+        <button class="abtn sec" onclick="showToast('📅 Lien Calendly — à configurer')">📅 Planifier RDV</button>
+      </div>
+    </div>`
+  document.getElementById('panel').classList.add('open')
+}
+function closePanel(){selectedId=null;buildMini();document.getElementById('panel').classList.remove('open')}
+
+// ── VIEWS ──────────────────────────────────────────────────────────────────
+function switchView(v){
+  currentView=v
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'))
+  document.getElementById('tab-'+v).classList.add('active')
+  document.getElementById('map-view').style.display=v==='map'?'block':'none'
+  document.getElementById('pipeline-view').classList.toggle('active',v==='pipeline')
+  document.getElementById('list-view').classList.toggle('active',v==='list')
+  if(v==='map'){initMap();setTimeout(()=>leafletMap?.invalidateSize(),100)}
+  else if(v==='pipeline')buildPipeline()
+  else buildList()
+}
+function refresh(){
+  updateStats();buildSFilters();buildMini()
+  if(currentView==='map')renderMarkers()
+  else if(currentView==='pipeline')buildPipeline()
+  else buildList()
+}
+
+// ── TOAST ──────────────────────────────────────────────────────────────────
+function showToast(m){
+  const el=document.getElementById('toast')
+  el.textContent=m;el.classList.add('show')
+  setTimeout(()=>el.classList.remove('show'),3000)
+}
+
+init()
+</script>
+</body>
+</html>
