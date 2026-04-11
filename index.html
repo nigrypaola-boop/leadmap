@@ -672,7 +672,7 @@ function updateStats(){
 
 function buildSFilters(){
   const el=document.getElementById('sfilt')
-  el.innerHTML=[['all','Tous',prospects.length,null],...Object.entries(ST).map(([k,s])=>[k,s.label,prospects.filter(p=>p.statut===k).length,s.color])].filter(([,,,]=>[true])).map(([k,label,n,color])=>{
+  el.innerHTML=[['all','Tous',prospects.length,null],...Object.entries(ST).map(([k,s])=>[k,s.label,prospects.filter(p=>p.statut===k).length,s.color])].map(([k,label,n,color])=>{
     if(k!=='all'&&n===0)return''
     return`<button class="fbtn ${statusFilter===k?'active':''}" onclick="filterStatus('${k}')" id="sf-${k}" style="font-size:11px">
       <div class="fdot" style="background:${color||'var(--muted)'}"></div>${label}<span class="fcnt">${n}</span>
