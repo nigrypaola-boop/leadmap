@@ -160,44 +160,6 @@ tbody tr:hover{background:#F9F7F5}
 .sbadge .sd{width:5px;height:5px;border-radius:50%}
 .type-pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px}
 
-/* ── CHAT CLAUDE ── */
-#chat-view{display:none;height:100%;flex-direction:column;background:var(--navy-mid)}
-#chat-view.active{display:flex}
-.chat-header{padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
-.chat-title{font-family:'Geist',sans-serif;font-size:16px;font-weight:700;color:var(--white);letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
-.chat-sub{font-size:11px;color:var(--muted);margin-top:3px}
-.ai-dot{width:8px;height:8px;border-radius:50%;background:#A78BFA;animation:blink 2s infinite}
-.chat-examples{display:flex;gap:6px;flex-wrap:wrap;padding:12px 20px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0}
-.chat-ex{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:7px 12px;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
-.chat-ex:hover{background:rgba(167,139,250,.15);border-color:rgba(167,139,250,.3);color:#C4B5FD}
-.chat-messages{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px}
-.chat-messages::-webkit-scrollbar{width:3px}
-.chat-messages::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
-.msg{display:flex;gap:10px;align-items:flex-start;animation:msgIn .25s ease}
-@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.msg.user{flex-direction:row-reverse}
-.msg-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
-.msg-av.ai{background:rgba(167,139,250,.2);color:#A78BFA;font-size:12px}
-.msg-av.user{background:var(--c-dentaire);color:white}
-.msg-bubble{max-width:80%;padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.55}
-.msg-bubble.ai{background:rgba(255,255,255,.06);color:var(--white);border-radius:4px 12px 12px 12px}
-.msg-bubble.user{background:var(--c-dentaire);color:white;border-radius:12px 4px 12px 12px}
-.msg-action{margin-top:10px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.2);border-radius:8px;padding:10px 12px;font-size:11px;color:#C4B5FD}
-.msg-action-title{font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:6px}
-.msg-action-item{color:rgba(196,181,253,.7);margin-top:3px}
-.chat-input-wrap{padding:14px 20px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0;display:flex;gap:8px}
-.chat-input{flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:11px 16px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--white);outline:none;transition:border-color .2s;resize:none;height:44px;max-height:120px}
-.chat-input::placeholder{color:var(--muted)}
-.chat-input:focus{border-color:rgba(167,139,250,.5)}
-.chat-send{background:#7C3AED;color:white;border:none;border-radius:8px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0;font-size:16px}
-.chat-send:hover{background:#6D28D9}
-.chat-send:disabled{opacity:.4;cursor:not-allowed}
-.typing{display:flex;gap:4px;align-items:center;padding:10px 14px}
-.typing span{width:6px;height:6px;border-radius:50%;background:rgba(167,139,250,.6);animation:typing .8s infinite}
-.typing span:nth-child(2){animation-delay:.15s}
-.typing span:nth-child(3){animation-delay:.3s}
-@keyframes typing{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
-
 /* ── INSTAGRAM STATS ── */
 #instagram-view{display:none;height:100%;overflow-y:auto;background:var(--cream);padding:20px}
 #instagram-view.active{display:block}
@@ -309,6 +271,29 @@ tbody tr:hover{background:#F9F7F5}
 /* TOAST */
 .toast{position:fixed;bottom:20px;right:20px;background:var(--navy);color:white;padding:10px 16px;border-radius:8px;font-size:12px;box-shadow:var(--shadow);z-index:9999;transform:translateY(60px);opacity:0;transition:all .3s cubic-bezier(.22,1,.36,1);max-width:320px}
 .toast.show{transform:translateY(0);opacity:1}
+
+/* ── SUGGESTIONS BANNER ── */
+#suggestions-banner{background:var(--navy);border-bottom:1px solid rgba(255,255,255,.06);padding:10px 18px;flex-shrink:0;display:none}
+#suggestions-banner.visible{display:block}
+.sug-title{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:600;margin-bottom:8px}
+.sug-items{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+.sug-items::-webkit-scrollbar{height:0}
+.sug-item{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:8px 12px;white-space:nowrap;cursor:pointer;transition:all .2s;flex-shrink:0;display:flex;align-items:center;gap:8px}
+.sug-item:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.15)}
+.sug-item-text{font-size:12px;color:var(--white)}
+.sug-item-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;white-space:nowrap}
+.sug-close{margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 0 0 8px;flex-shrink:0}
+.sug-close:hover{color:var(--white)}
+
+/* ── ADRESSE MANUELLE IN PANEL ── */
+.addr-edit{padding:8px 10px;background:var(--cream);border-radius:7px;margin-bottom:6px}
+.addr-edit-label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-bottom:5px}
+.addr-edit-row{display:flex;gap:6px}
+.addr-input{flex:1;border:1px solid rgba(0,0,0,.1);border-radius:6px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);outline:none;background:white}
+.addr-input:focus{border-color:var(--c-dentaire)}
+.addr-btn{background:var(--c-dentaire);color:white;border:none;border-radius:6px;padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap}
+.addr-status{font-size:10px;margin-top:4px;min-height:14px}
+.addr-status.ok{color:var(--green)}.addr-status.err{color:var(--red)}.addr-status.loading{color:var(--muted)}
 </style>
 </head>
 <body>
@@ -337,7 +322,6 @@ tbody tr:hover{background:#F9F7F5}
       <button class="tab-btn active" onclick="switchView('map')" id="tab-map">🗺 Carte</button>
       <button class="tab-btn" onclick="switchView('pipeline')" id="tab-pipeline">📋 Pipeline</button>
       <button class="tab-btn" onclick="switchView('list')" id="tab-list">📊 Liste</button>
-      <button class="tab-btn ai" onclick="switchView('chat')" id="tab-chat">✦ Assistant</button>
       <button class="tab-btn ig" onclick="switchView('instagram')" id="tab-instagram">📸 Instagram</button>
     </nav>
     <button class="add-btn" onclick="openAddModal()">+ Prospect</button>
@@ -354,6 +338,15 @@ tbody tr:hover{background:#F9F7F5}
       <button class="out-btn" onclick="doLogout()">Déco</button>
     </div>
   </header>
+
+  <!-- SUGGESTIONS BANNER -->
+  <div id="suggestions-banner">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="sug-title">✦ Actions prioritaires du jour</div>
+      <button class="sug-close" onclick="document.getElementById('suggestions-banner').classList.remove('visible')">×</button>
+    </div>
+    <div class="sug-items" id="sug-items"></div>
+  </div>
 
   <div class="main">
     <aside class="sidebar">
@@ -398,29 +391,7 @@ tbody tr:hover{background:#F9F7F5}
         </div>
       </div>
 
-      <!-- CHAT CLAUDE -->
-      <div id="chat-view">
-        <div class="chat-header">
-          <div class="chat-title"><div class="ai-dot"></div>Assistant LeadMap</div>
-          <div class="chat-sub">Dites-moi ce qui se passe — je mets à jour votre CRM automatiquement</div>
-        </div>
-        <div class="chat-examples">
-          <div class="chat-ex" onclick="sendExample(this)">J'ai reçu un DM Instagram de Space of Time, ils veulent reprendre contact</div>
-          <div class="chat-ex" onclick="sendExample(this)">Dr. Brandt m'a appelée, intéressé pour un devis en juin</div>
-          <div class="chat-ex" onclick="sendExample(this)">Clinique Adonis a signé le contrat aujourd'hui ✓</div>
-          <div class="chat-ex" onclick="sendExample(this)">Ajoute la Clinique Beaumont à Lausanne, médecine esthétique, contact : Dr. Sophie Favre</div>
-        </div>
-        <div class="chat-messages" id="chat-messages">
-          <div class="msg">
-            <div class="msg-av ai">✦</div>
-            <div class="msg-bubble ai">Bonjour Paola ! Je suis votre assistant CRM. Dites-moi ce qui se passe avec vos prospects — un appel reçu, un DM Instagram, un email — et je mets à jour votre pipeline automatiquement.<br><br>Vous pouvez aussi me demander d'ajouter un nouveau prospect ou de noter une information sur un contact existant.</div>
-          </div>
-        </div>
-        <div class="chat-input-wrap">
-          <textarea class="chat-input" id="chat-input" placeholder="Ex: J'ai eu un retour positif par DM Instagram de Zanzi Clinic..." onkeydown="handleChatKey(event)" rows="1"></textarea>
-          <button class="chat-send" id="chat-send" onclick="sendChat()">↑</button>
-        </div>
-      </div>
+
 
       <!-- INSTAGRAM -->
       <div id="instagram-view">
@@ -573,7 +544,7 @@ async function showApp(){
   document.getElementById('app').style.display='flex'
   document.getElementById('loading').classList.add('gone')
   const em=currentUser.email;document.getElementById('uem').textContent=em;document.getElementById('uav').textContent=em[0].toUpperCase()
-  await loadData();subscribeRT();await new Promise(r=>setTimeout(r,100));initMap()
+  await loadData();subscribeRT();await new Promise(r=>setTimeout(r,100));initMap();buildSuggestions()
 }
 
 // ── DATA ──
@@ -1240,12 +1211,26 @@ function openPanel(id){
     (hist.length?'<div class="psec"><div class="pstitle">Historique récent</div>'+
       hist.map(h=>'<div class="hitem"><div class="hline"><div class="hdot" style="background:'+(h.reponse?'#4CAF50':'#4A8FD4')+'"></div></div><div><div class="hdate">'+h.date+'</div><div class="hact">'+h.action+'</div></div></div>').join('')+
       '</div>':'')+
+    '<div class="psec">'+
+      '<div class="pstitle">Position sur la carte</div>'+
+      '<div class="addr-edit">'+
+        '<div class="addr-edit-label">Adresse exacte</div>'+
+        '<div style="font-size:11px;color:var(--soft);margin-bottom:6px">'+(p.adresse||p.lat?'📍 '+(p.adresse||'Localisé'):'Non localisé — non visible sur la carte')+'</div>'+
+        '<div class="addr-edit-row">'+
+          '<input class="addr-input" id="addr-input-'+pid+'" placeholder="Ex: Rue de Rive 10, 1204 Genève" value="'+(p.adresse||'')+'">'+
+          '<button class="addr-btn" id="addr-btn-'+pid+'">📍 Localiser</button>'+
+        '</div>'+
+        '<div class="addr-status" id="addr-status-'+pid+'"></div>'+
+      '</div>'+
+    '</div>'+
     '<div class="psec"><div class="pstitle">Actions</div><div class="pactions">'+
       (email?'<a class="abtn pri" href="mailto:'+email+'">✉️ Email</a>':'')+
       '<button class="abtn sec" id="prl2-'+pid+'">📞 Relancer</button>'+
     '</div></div>'
 
   document.getElementById('psel-'+pid).addEventListener('change',function(){saveStatus(pid,this.value)})
+  const addrBtn=document.getElementById('addr-btn-'+pid)
+  if(addrBtn)addrBtn.addEventListener('click',function(){geocodeAndSave(pid)})
   document.getElementById('prl-'+pid).addEventListener('click',function(){addRelance(pid)})
   const btn2=document.getElementById('prl2-'+pid);if(btn2)btn2.addEventListener('click',function(){addRelance(pid)})
 
@@ -1286,7 +1271,6 @@ function switchView(v){
   document.getElementById('map-view').style.display=v==='map'?'block':'none'
   document.getElementById('pipeline-view').classList.toggle('active',v==='pipeline')
   document.getElementById('list-view').classList.toggle('active',v==='list')
-  document.getElementById('chat-view').classList.toggle('active',v==='chat')
   document.getElementById('instagram-view').classList.toggle('active',v==='instagram')
   if(v==='map'){initMap();setTimeout(()=>leafletMap?.invalidateSize(),100)}
   else if(v==='pipeline')buildPipeline()
@@ -1299,6 +1283,105 @@ function refresh(){
   if(currentView==='map')renderMarkers()
   else if(currentView==='pipeline')buildPipeline()
   else if(currentView==='list')buildList()
+}
+
+// ── SUGGESTIONS MATINALES ──
+async function buildSuggestions(){
+  if(!prospects.length)return
+  const today=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'short'})
+  const lastSugDate=localStorage.getItem('last_sug_date')
+  // Don't regenerate if already done today
+  const cached=localStorage.getItem('sug_cache')
+  if(lastSugDate===today&&cached){
+    renderSuggestions(JSON.parse(cached))
+    return
+  }
+
+  // Build suggestions locally based on data (no API needed)
+  const sugs=[]
+
+  // RDV today or tomorrow
+  const rdvProspects=prospects.filter(p=>p.statut==='rdv_planifie')
+  rdvProspects.forEach(p=>{
+    sugs.push({emoji:'📅',text:'RDV planifié avec '+p.nom+' — préparer la présentation',id:p.id,urgence:'high'})
+  })
+
+  // Propositions en attente depuis > 3 jours
+  const props=prospects.filter(p=>p.statut==='proposition_envoyee'&&daysSince(p.updated_at)>3)
+  props.slice(0,2).forEach(p=>{
+    const d=daysSince(p.updated_at)
+    sugs.push({emoji:'🔥',text:'Proposition envoyée il y a '+d+'j à '+p.nom+' — bon moment pour appeler',id:p.id,urgence:'high'})
+  })
+
+  // Sans contact depuis > 14 jours
+  const stale=prospects.filter(p=>daysSince(p.updated_at)>14&&!['client_actif','perdu'].includes(p.statut))
+  stale.slice(0,2).forEach(p=>{
+    sugs.push({emoji:'⏰',text:'Relancer '+p.nom+' — '+daysSince(p.updated_at)+'j sans contact',id:p.id,urgence:'medium'})
+  })
+
+  // Prospects ayant répondu mais pas encore avancés
+  const responded=prospects.filter(p=>{
+    const h=p.historique||[]
+    return h.some(x=>x.reponse)&&p.statut==='email_envoye'
+  })
+  responded.slice(0,2).forEach(p=>{
+    sugs.push({emoji:'✉️',text:p.nom+' a répondu — envoyer une proposition',id:p.id,urgence:'high'})
+  })
+
+  // Prospects sans adresse sur la carte
+  const noCoords=prospects.filter(p=>!p.lat||!p.lng).slice(0,1)
+  noCoords.forEach(p=>{
+    sugs.push({emoji:'📍',text:'Ajouter adresse de '+p.nom+' pour la carte',id:p.id,urgence:'low'})
+  })
+
+  const top=sugs.sort((a,b)=>a.urgence==='high'?-1:1).slice(0,5)
+  localStorage.setItem('sug_cache',JSON.stringify(top))
+  localStorage.setItem('last_sug_date',today)
+  renderSuggestions(top)
+}
+
+function renderSuggestions(sugs){
+  if(!sugs.length)return
+  const banner=document.getElementById('suggestions-banner')
+  const items=document.getElementById('sug-items')
+  const colors={high:'rgba(239,68,68,.2)',medium:'rgba(240,180,41,.2)',low:'rgba(59,130,246,.2)'}
+  const textColors={high:'#FCA5A5',medium:'#FCD34D',low:'#93C5FD'}
+  items.innerHTML=sugs.map(s=>`
+    <div class="sug-item" onclick="openPanel('${s.id}')">
+      <span style="font-size:14px">${s.emoji}</span>
+      <span class="sug-item-text">${s.text}</span>
+      <span class="sug-item-badge" style="background:${colors[s.urgence]||colors.low};color:${textColors[s.urgence]||textColors.low}">${s.urgence==='high'?'Urgent':s.urgence==='medium'?'À faire':'Info'}</span>
+    </div>`).join('')
+  banner.classList.add('visible')
+}
+
+// ── GÉOLOCALISATION MANUELLE DANS LE PANEL ──
+async function geocodeAndSave(prospectId){
+  const input=document.getElementById('addr-input-'+prospectId)
+  const status=document.getElementById('addr-status-'+prospectId)
+  if(!input)return
+  const addr=input.value.trim()
+  if(!addr){status.textContent='Entrez une adresse';status.className='addr-status err';return}
+  status.textContent='Localisation...';status.className='addr-status loading'
+  try{
+    const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(addr)+'&limit=1&accept-language=fr')
+    const d=await r.json()
+    if(!d||!d[0]){status.textContent='Adresse non trouvée';status.className='addr-status err';return}
+    const lat=parseFloat(d[0].lat),lng=parseFloat(d[0].lon)
+    const display=d[0].display_name.split(',').slice(0,3).join(', ')
+    await db.from('prospects').update({lat,lng,adresse:addr}).eq('id',prospectId).eq('user_id',currentUser.id)
+    const p=prospects.find(x=>x.id===prospectId)
+    if(p){p.lat=lat;p.lng=lng;p.adresse=addr}
+    status.textContent='✓ Placé : '+display;status.className='addr-status ok'
+    refresh()
+    setTimeout(()=>{
+      if(currentView==='map'){
+        leafletMap?.setView([lat,lng],13)
+      }
+    },500)
+  }catch(e){
+    status.textContent='Erreur de géolocalisation';status.className='addr-status err'
+  }
 }
 
 // ── TOAST ──
