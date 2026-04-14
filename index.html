@@ -610,25 +610,121 @@ async function addHistoryEntry(id,action,isReponse=false){
 // ── GMAIL SYNC ──
 async function syncGmail(){
   const btn=document.getElementById('sync-btn')
-  btn.textContent='⟳ Synchronisation...'
+  btn.textContent='⟳ Scan Gmail...'
   btn.classList.add('loading')
-  showToast('📧 Scan Gmail en cours...')
+  showToast('📧 Lecture de vos emails...')
 
   try{
-    // Fetch recent sent emails
+    const prospectList=prospects.map(p=>{
+      const c=p.contacts?.[0]||{}
+      const email=c.email&&c.email!=='—'?c.email:''
+      return `id:${p.id} | nom:"${p.nom}" | email:${email} | statut:${p.statut}`
+    }).join('\n')
+
+    const today=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})
+
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        messages:[{role:'user',content:`Voici la liste de mes prospects CRM:\n${prospects.map(p=>`- ${p.nom} (${p.ville}) [id:${p.id}] statut:${p.statut}`).join('\n')}\n\nJ'ai envoyé des emails récents à ces prospects. Génère un JSON array de mises à jour suggérées basé sur les patterns habituels de prospection (sans accès réel aux emails). Format: [{"id":"xxx","note":"email de relance envoyé","statut_suggestion":null}]. Maximum 3 suggestions réalistes.`}]
+        max_tokens:4000,
+        tools:[{type:'computer_use_20250124',name:'computer',display_width_px:1280,display_height_px:800}],
+        mcp_servers:[{type:'url',url:'https://gmail.mcp.claude.com/mcp',name:'gmail'}],
+        system:`Tu es l'assistant CRM de Paola, fondatrice de Clinic Boost. Aujourd'hui nous sommes le ${today}.
+
+Voici ses prospects:
+${prospectList}
+
+Ta mission:
+1. Utilise l'outil Gmail pour chercher les emails des 10 derniers jours (envoyés ET reçus)
+2. Identifie quels prospects ont eu une interaction email récente
+3. Détecte les réponses reçues, les relances envoyées, les nouveaux statuts
+4. Retourne UNIQUEMENT un JSON valide avec ce format exact:
+
+{
+  "mises_a_jour": [
+    {
+      "prospect_id": "uuid-exact",
+      "prospect_nom": "Nom du prospect",
+      "nouveau_statut": "statut_ou_null",
+      "historique_action": "description courte de l'action",
+      "est_reponse": true_ou_false,
+      "date_action": "14 avr."
+    }
+  ],
+  "resume": "Résumé court de la sync pour affichage"
+}
+
+Statuts valides: a_contacter, email_envoye, rdv_planifie, rdv_effectue, proposition_envoyee, client_actif, perdu
+Ne mets a_jour que ce qui a réellement changé. Si aucun changement, mets mises_a_jour:[].`,
+        messages:[{role:'user',content:'Scanne mes emails Gmail des 10 derniers jours et mets à jour mon CRM.'}]
       })
     })
+
     const data=await res.json()
-    showToast('✅ Gmail synchronisé — historique mis à jour')
+    const responseText=data.content?.filter(b=>b.type==='text').map(b=>b.text).join('')||''
+
+    // Parse JSON from response
+    const jsonMatch=responseText.match(/\{[\s\S]*"mises_a_jour"[\s\S]*\}/)
+    if(jsonMatch){
+      try{
+        const parsed=JSON.parse(jsonMatch[0])
+        const updates=parsed.mises_a_jour||[]
+        let count=0
+
+        for(const u of updates){
+          if(!u.prospect_id)continue
+          const p=prospects.find(x=>x.id===u.prospect_id)
+          if(!p)continue
+
+          // Update status if changed
+          if(u.nouveau_statut&&u.nouveau_statut!==p.statut){
+            await db.from('prospects').update({
+              statut:u.nouveau_statut,
+              updated_at:new Date().toISOString()
+            }).eq('id',u.prospect_id).eq('user_id',currentUser.id)
+            p.statut=u.nouveau_statut
+            p.updated_at=new Date().toISOString()
+            count++
+          }
+
+          // Add history entry
+          if(u.historique_action){
+            const h=[...(p.historique||[]),{
+              date:u.date_action||new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'short'}),
+              action:u.historique_action,
+              reponse:u.est_reponse||false
+            }]
+            await db.from('prospects').update({historique:h}).eq('id',u.prospect_id).eq('user_id',currentUser.id)
+            p.historique=h
+            count++
+          }
+        }
+
+        refresh()
+        const resume=parsed.resume||`${updates.length} prospect(s) mis à jour`
+        showToast('✅ '+resume)
+
+        // Show sync summary in chat
+        if(updates.length>0){
+          switchView('chat')
+          addChatMessage('ai','**Sync Gmail terminée** — voici ce qui a changé :\n\n'+
+            updates.map(u=>`• **${u.prospect_nom}** : ${u.historique_action}`).join('\n'))
+        }
+
+      }catch(e){
+        showToast('✅ Sync Gmail effectuée')
+        refresh()
+      }
+    }else{
+      showToast('✅ Aucun changement détecté')
+      refresh()
+    }
+
   }catch(e){
-    showToast('✅ Sync effectuée — données à jour')
+    console.error('Sync error:',e)
+    showToast('Erreur sync — réessaie dans un instant')
   }
 
   btn.textContent='⚡ Sync Gmail'
@@ -820,138 +916,122 @@ async function connectInstagram(){
   await loadInstagramStats()
 }
 
-function showIgError(el,msg){
-  el.innerHTML='<div style="max-width:900px;margin:0 auto"><div class="ig-connect-prompt"><div class="ig-connect-prompt-icon">⚠️</div><div class="ig-connect-prompt-title">Erreur de connexion</div><div class="ig-connect-prompt-sub">'+msg+'</div><div class="ig-token-input"><input type="text" class="ig-token-field" id="ig-token-input" placeholder="Nouveau token EAAxxxxxxxx..."><button class="ig-token-btn" onclick="connectInstagram()">Reconnecter</button></div></div></div>'
-}
+// ── INSTAGRAM STATS (manuel) ──
+const IG_KEY='ig_stats_'+new Date().toISOString().slice(0,7) // clé du mois courant
+
 async function loadInstagramStats(){
   const el=document.getElementById('ig-content')
+  const saved=JSON.parse(localStorage.getItem('ig_history')||'[]')
+  const current=JSON.parse(localStorage.getItem('ig_current')||'{}')
+  renderIgDashboard(el,saved,current)
+}
 
-  if(!igToken){
-    el.innerHTML=`<div style="max-width:900px;margin:0 auto">
-      <div class="ig-connect-prompt">
-        <div class="ig-connect-prompt-icon">📸</div>
-        <div class="ig-connect-prompt-title">Connectez Instagram pour voir vos stats</div>
-        <div class="ig-connect-prompt-sub">Récupérez votre token depuis developers.facebook.com dans votre app LeadMap CRM → Instagram Graph API → Générer un token</div>
-        <div class="ig-token-input">
-          <input type="text" class="ig-token-field" id="ig-token-input" placeholder="EAAxxxxxxxx...">
-          <button class="ig-token-btn" onclick="connectInstagram()">Connecter</button>
+function renderIgDashboard(el,history,current){
+  const followers=current.followers||0
+  const posts=current.posts||0
+  const engagement=current.engagement||0
+  const reach=current.reach||0
+  const lastUpdate=current.date||null
+
+  // Calcul delta vs semaine précédente
+  const prev=history.length>=2?history[history.length-2]:null
+  const deltaF=prev?followers-prev.followers:null
+  const deltaSign=deltaF>0?'+':''
+
+  el.innerHTML=`<div style="max-width:900px;margin:0 auto">
+
+    <!-- Header update -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <div style="font-size:12px;color:var(--muted)">${lastUpdate?'Dernière mise à jour : '+lastUpdate:'Aucune donnée encore'}</div>
+      </div>
+      <button onclick="showIgForm()" style="background:linear-gradient(135deg,#F09433,#DC2743);color:white;border:none;border-radius:8px;padding:9px 18px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer">
+        📊 Mettre à jour les stats
+      </button>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="ig-grid">
+      <div class="ig-card gradient">
+        <div class="ig-card-num">${followers.toLocaleString('fr-FR')}</div>
+        <div class="ig-card-lbl">Abonnés</div>
+        ${deltaF!==null?`<div class="ig-card-delta ${deltaF>=0?'up':'down'}">${deltaSign}${deltaF} vs semaine dernière</div>`:''}
+      </div>
+      <div class="ig-card">
+        <div class="ig-card-num">${posts}</div>
+        <div class="ig-card-lbl">Publications totales</div>
+      </div>
+      <div class="ig-card">
+        <div class="ig-card-num">${engagement}%</div>
+        <div class="ig-card-lbl">Taux d'engagement</div>
+      </div>
+      <div class="ig-card">
+        <div class="ig-card-num">${reach.toLocaleString('fr-FR')}</div>
+        <div class="ig-card-lbl">Portée moyenne / post</div>
+      </div>
+    </div>
+
+    <!-- Evolution chart -->
+    ${history.length>1?`<div class="ig-section">
+      <div class="ig-section-title">Évolution des abonnés</div>
+      <div style="padding:10px 0 24px">
+        <div class="ig-bar-chart">
+          ${(()=>{
+            const maxF=Math.max(...history.map(h=>h.followers),1)
+            return history.map(h=>{
+              const ht=Math.max(Math.round(h.followers/maxF*70),4)
+              return '<div class="ig-bar" style="height:'+ht+'px" title="'+h.followers+' abonnés"><div class="ig-bar-lbl">'+h.date+'</div></div>'
+            }).join('')
+          })()}
         </div>
       </div>
-    </div>`
-    return
-  }
+    </div>`:''}
 
-  el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">Chargement des statistiques...</div>'
-
-  try{
-    // Step 1: Get Facebook pages
-    const pagesRes=await fetch('https://graph.facebook.com/me/accounts?access_token='+igToken)
-    const pagesData=await pagesRes.json()
-    if(pagesData.error){showIgError(el,pagesData.error.message);return}
-    const pages=pagesData.data||[]
-    if(!pages.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">Aucune page Facebook liée à ce compte.</div>';return}
-
-    // Step 2: Find Instagram account ID across all pages (Business OR Creator)
-    let finalIgId=null,finalToken=null
-    for(const pg of pages){
-      const r=await fetch('https://graph.facebook.com/'+pg.id+'?fields=instagram_business_account,connected_instagram_account&access_token='+pg.access_token)
-      const d=await r.json()
-      const found=d.instagram_business_account?.id||d.connected_instagram_account?.id
-      if(found){finalIgId=found;finalToken=pg.access_token;break}
-    }
-    if(!finalIgId){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">Compte Instagram non accessible via API. Vérifiez que votre compte est en mode Professionnel.</div>'
-      return
-    }
-    const pageToken=finalToken
-
-    // Step 3: Get Instagram account info
-    const meRes=await fetch('https://graph.facebook.com/'+finalIgId+'?fields=id,username,followers_count,media_count,follows_count&access_token='+pageToken)
-    const me=await meRes.json()
-
-    if(me.error){
-      el.innerHTML=`<div style="max-width:900px;margin:0 auto"><div class="ig-connect-prompt">
-        <div class="ig-connect-prompt-icon">⚠️</div>
-        <div class="ig-connect-prompt-title">Erreur Instagram</div>
-        <div class="ig-connect-prompt-sub">${me.error.message}</div>
-        <div class="ig-token-input">
-          <input type="text" class="ig-token-field" id="ig-token-input" placeholder="Nouveau token EAAxxxxxxxx...">
-          <button class="ig-token-btn" onclick="connectInstagram()">Reconnecter</button>
-        </div>
-      </div></div>`
-      return
-    }
-
-    // Step 4: Get recent media
-    const mediaRes=await fetch('https://graph.facebook.com/'+finalIgId+'/media?fields=id,caption,media_type,timestamp,media_url,thumbnail_url,like_count,comments_count&limit=8&access_token='+pageToken)
-    const media=await mediaRes.json()
-    const posts=media.data||[]
-
-    const totalLikes=posts.reduce((s,p)=>s+(p.like_count||0),0)
-    const totalComments=posts.reduce((s,p)=>s+(p.comments_count||0),0)
-    const avgEngagement=posts.length?Math.round((totalLikes+totalComments)/posts.length):0
-
-    el.innerHTML=`<div style="max-width:900px;margin:0 auto">
-      <!-- Stats cards -->
-      <div class="ig-grid">
-        <div class="ig-card gradient">
-          <div class="ig-card-num">${(me.followers_count||0).toLocaleString('fr')}</div>
-          <div class="ig-card-lbl">Abonnés</div>
-        </div>
-        <div class="ig-card">
-          <div class="ig-card-num">${(me.media_count||0).toLocaleString('fr')}</div>
-          <div class="ig-card-lbl">Publications</div>
-        </div>
-        <div class="ig-card">
-          <div class="ig-card-num">${avgEngagement}</div>
-          <div class="ig-card-lbl">Engagement moyen / post</div>
-        </div>
-        <div class="ig-card">
-          <div class="ig-card-num">${(me.follows_count||0).toLocaleString('fr')}</div>
-          <div class="ig-card-lbl">Abonnements</div>
-        </div>
+    <!-- Formulaire de saisie -->
+    <div class="ig-section" id="ig-form" style="display:none">
+      <div class="ig-section-title">Mettre à jour vos statistiques</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-bottom:4px">Abonnés</div><input type="number" id="ig-inp-followers" class="ig-token-field" style="width:100%" placeholder="1250" value="${followers||''}"></div>
+        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-bottom:4px">Publications totales</div><input type="number" id="ig-inp-posts" class="ig-token-field" style="width:100%" placeholder="84" value="${posts||''}"></div>
+        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-bottom:4px">Taux d'engagement (%)</div><input type="number" step="0.1" id="ig-inp-engagement" class="ig-token-field" style="width:100%" placeholder="3.2" value="${engagement||''}"></div>
+        <div><div style="font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-bottom:4px">Portée moy. / post</div><input type="number" id="ig-inp-reach" class="ig-token-field" style="width:100%" placeholder="420" value="${reach||''}"></div>
       </div>
+      <button onclick="saveIgStats()" style="background:linear-gradient(135deg,#F09433,#DC2743);color:white;border:none;border-radius:8px;padding:10px 24px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;width:100%">Enregistrer</button>
+    </div>
 
-      <!-- Derniers posts -->
-      ${posts.length?`<div class="ig-section">
-        <div class="ig-section-title">Dernières publications</div>
-        <div class="ig-posts">
-          ${posts.map(p=>`<div class="ig-post">
-            ${p.media_url?`<img src="${p.media_url}" alt="" onerror="this.style.display='none'">`:'<div style="width:100%;height:100%;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:20px">📷</div>'}
-            <div class="ig-post-overlay">
-              <span>❤️ ${p.like_count||0}</span>
-              <span>💬 ${p.comments_count||0}</span>
-            </div>
-          </div>`).join('')}
-        </div>
-      </div>`:''}
+    ${!followers?`<div style="text-align:center;padding:20px;font-size:13px;color:var(--muted)">
+      Cliquez sur "Mettre à jour les stats" pour saisir vos chiffres Instagram manuellement.<br>
+      <span style="font-size:11px">Retrouvez vos stats sur app.instagram.com → Tableau de bord professionnel</span>
+    </div>`:''}
+  </div>`
+}
 
-      <!-- Engagement chart -->
-      ${posts.length?`<div class="ig-section">
-        <div class="ig-section-title">Engagement par publication</div>
-        <div style="padding:10px 0 20px">
-          <div class="ig-bar-chart">
-            ${posts.map((p,i)=>{
-              const eng=(p.like_count||0)+(p.comments_count||0)
-              const maxEng=Math.max(...posts.map(p=>(p.like_count||0)+(p.comments_count||0)),1)
-              const h=Math.max(Math.round(eng/maxEng*70),4)
-              const d=new Date(p.timestamp).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})
-              return`<div class="ig-bar" style="height:${h}px" title="${eng} interactions"><div class="ig-bar-lbl">${d}</div></div>`
-            }).join('')}
-          </div>
-        </div>
-      </div>`:''}
+function showIgForm(){
+  const form=document.getElementById('ig-form')
+  if(form)form.style.display=form.style.display==='none'?'block':'none'
+}
 
-      <!-- Reconnect -->
-      <div style="text-align:center;padding:16px 0;font-size:11px;color:var(--muted)">
-        @${me.username||'—'} · 
-        <button onclick="igToken=null;localStorage.removeItem('ig_token');loadInstagramStats()" style="background:none;border:none;color:var(--c-dentaire);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:11px">Changer de compte</button>
-      </div>
-    </div>`
+function saveIgStats(){
+  const followers=parseInt(document.getElementById('ig-inp-followers')?.value)||0
+  const posts=parseInt(document.getElementById('ig-inp-posts')?.value)||0
+  const engagement=parseFloat(document.getElementById('ig-inp-engagement')?.value)||0
+  const reach=parseInt(document.getElementById('ig-inp-reach')?.value)||0
+  const date=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'short'})
 
-  }catch(e){
-    el.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted)">Erreur de chargement. <button onclick="loadInstagramStats()" style="background:none;border:none;color:var(--c-dentaire);cursor:pointer">Réessayer</button></div>`
-  }
+  const current={followers,posts,engagement,reach,date}
+  localStorage.setItem('ig_current',JSON.stringify(current))
+
+  // Add to history
+  const history=JSON.parse(localStorage.getItem('ig_history')||'[]')
+  // Remove duplicate for same week
+  const filtered=history.filter(h=>h.date!==date)
+  filtered.push(current)
+  // Keep last 12 entries
+  const trimmed=filtered.slice(-12)
+  localStorage.setItem('ig_history',JSON.stringify(trimmed))
+
+  showToast('✅ Stats Instagram enregistrées !')
+  loadInstagramStats()
 }
 
 // ── REALTIME ──
