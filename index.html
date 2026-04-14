@@ -820,6 +820,9 @@ async function connectInstagram(){
   await loadInstagramStats()
 }
 
+function showIgError(el,msg){
+  el.innerHTML='<div style="max-width:900px;margin:0 auto"><div class="ig-connect-prompt"><div class="ig-connect-prompt-icon">⚠️</div><div class="ig-connect-prompt-title">Erreur de connexion</div><div class="ig-connect-prompt-sub">'+msg+'</div><div class="ig-token-input"><input type="text" class="ig-token-field" id="ig-token-input" placeholder="Nouveau token EAAxxxxxxxx..."><button class="ig-token-btn" onclick="connectInstagram()">Reconnecter</button></div></div></div>'
+}
 async function loadInstagramStats(){
   const el=document.getElementById('ig-content')
 
@@ -841,43 +844,29 @@ async function loadInstagramStats(){
   el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">Chargement des statistiques...</div>'
 
   try{
-    // Step 1: Get Facebook pages linked to the token
-    const pagesRes=await fetch(`https://graph.facebook.com/me/accounts?access_token=${igToken}`)
+    // Step 1: Get Facebook pages
+    const pagesRes=await fetch('https://graph.facebook.com/me/accounts?access_token='+igToken)
     const pagesData=await pagesRes.json()
-
-    if(pagesData.error){
-      el.innerHTML=`<div style="max-width:900px;margin:0 auto"><div class="ig-connect-prompt">
-        <div class="ig-connect-prompt-icon">⚠️</div>
-        <div class="ig-connect-prompt-title">Token invalide ou expiré</div>
-        <div class="ig-connect-prompt-sub">${pagesData.error.message}</div>
-        <div class="ig-token-input">
-          <input type="text" class="ig-token-field" id="ig-token-input" placeholder="Nouveau token EAAxxxxxxxx...">
-          <button class="ig-token-btn" onclick="connectInstagram()">Reconnecter</button>
-        </div>
-      </div></div>`
-      return
-    }
-
+    if(pagesData.error){showIgError(el,pagesData.error.message);return}
     const pages=pagesData.data||[]
-    if(!pages.length){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">Aucune page Facebook trouvée liée à ce compte.</div>'
+    if(!pages.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">Aucune page Facebook liée à ce compte.</div>';return}
+
+    // Step 2: Find Instagram account ID across all pages (Business OR Creator)
+    let finalIgId=null,finalToken=null
+    for(const pg of pages){
+      const r=await fetch('https://graph.facebook.com/'+pg.id+'?fields=instagram_business_account,connected_instagram_account&access_token='+pg.access_token)
+      const d=await r.json()
+      const found=d.instagram_business_account?.id||d.connected_instagram_account?.id
+      if(found){finalIgId=found;finalToken=pg.access_token;break}
+    }
+    if(!finalIgId){
+      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">Compte Instagram non accessible via API. Vérifiez que votre compte est en mode Professionnel.</div>'
       return
     }
-
-    // Step 2: Find Instagram Business Account linked to first page
-    const page=pages[0]
-    const pageToken=page.access_token
-    const igAccRes=await fetch(`https://graph.facebook.com/${page.id}?fields=instagram_business_account&access_token=${pageToken}`)
-    const igAccData=await igAccRes.json()
-    const igId=igAccData.instagram_business_account?.id
-
-    if(!igId){
-      el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">Aucun compte Instagram Business trouvé lié à votre Page Facebook. Assurez-vous que votre Instagram est connecté à votre Page.</div>'
-      return
-    }
+    const pageToken=finalToken
 
     // Step 3: Get Instagram account info
-    const meRes=await fetch(`https://graph.facebook.com/${igId}?fields=id,username,followers_count,media_count,follows_count,profile_picture_url&access_token=${pageToken}`)
+    const meRes=await fetch('https://graph.facebook.com/'+finalIgId+'?fields=id,username,followers_count,media_count,follows_count&access_token='+pageToken)
     const me=await meRes.json()
 
     if(me.error){
@@ -894,7 +883,7 @@ async function loadInstagramStats(){
     }
 
     // Step 4: Get recent media
-    const mediaRes=await fetch(`https://graph.facebook.com/${igId}/media?fields=id,caption,media_type,timestamp,media_url,thumbnail_url,like_count,comments_count&limit=8&access_token=${pageToken}`)
+    const mediaRes=await fetch('https://graph.facebook.com/'+finalIgId+'/media?fields=id,caption,media_type,timestamp,media_url,thumbnail_url,like_count,comments_count&limit=8&access_token='+pageToken)
     const media=await mediaRes.json()
     const posts=media.data||[]
 
