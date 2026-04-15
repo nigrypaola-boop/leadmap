@@ -729,7 +729,14 @@ tbody tr:hover{background:#F9F7F5}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 <script>
 const {createClient}=supabase
-const db=createClient('https://ppaprccfyailecueoezp.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwYXByY2NmeWFpbGVjdWVvZXpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTY0NTksImV4cCI6MjA5MTQzMjQ1OX0.trUSIw2yhH-NIkDxWQsBOXfmduNr090uwpZzxR77dnk')
+const db=createClient('https://ppaprccfyailecueoezp.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwYXByY2NmeWFpbGVjdWVvZXpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTY0NTksImV4cCI6MjA5MTQzMjQ1OX0.trUSIw2yhH-NIkDxWQsBOXfmduNr090uwpZzxR77dnk',{
+  auth:{
+    persistSession:true,
+    autoRefreshToken:true,
+    storageKey:'leadmap_session',
+    storage:window.localStorage
+  }
+})
 
 // ── STATE ──
 let prospects=[],currentUser=null,currentView='map'
