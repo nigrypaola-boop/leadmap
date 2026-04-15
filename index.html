@@ -692,7 +692,7 @@ tbody tr:hover{background:#F9F7F5}
       <!-- Nouveau statut optionnel -->
       <div class="modal-field full">
         <label class="modal-label">Changer le statut (optionnel)</label>
-        <select class="modal-select" id="log-statut">
+        <select class="modal-select" id="log-statut" onchange="document.getElementById('log-rdv-date-row').style.display=this.value==='rdv_planifie'?'flex':'none'">
           <option value="">— Garder le statut actuel —</option>
           <option value="a_contacter">À contacter</option>
           <option value="email_envoye">Email envoyé</option>
@@ -702,6 +702,12 @@ tbody tr:hover{background:#F9F7F5}
           <option value="client_actif">Client actif ✓</option>
           <option value="perdu">Non intéressé</option>
         </select>
+      </div>
+
+      <!-- Date RDV (affichée si statut = rdv_planifie) -->
+      <div class="modal-field full" id="log-rdv-date-row" style="display:none">
+        <label class="modal-label">📅 Date & heure du RDV</label>
+        <input type="datetime-local" class="modal-input" id="log-rdv-date">
       </div>
 
       <!-- Suggérer suivi -->
@@ -1397,19 +1403,32 @@ function renderMarkers(){
 function buildPipeline(){
   document.getElementById('pipeline-view').innerHTML=Object.entries(ST).map(([k,s])=>{
     const cards=filt().filter(p=>p.statut===k)
+    const isRdv=k==='rdv_planifie'
     return`<div class="pcol">
-      <div class="phdr" style="background:${s.color}"><span class="phdrtitle">${s.label}</span><span class="pcnt">${cards.length}</span></div>
-      <div class="pcards">${cards.map(p=>{
-        const tm=getTypeMeta(p),rl=relanceLabel(p)
-        return`<div class="pcard" onclick="openPanel('${p.id}')" style="border-left-color:${tm.color}">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between">
-            <div style="font-size:11px;font-weight:600;color:var(--text)">${p.nom}</div>
-            <div style="font-size:14px">${tm.emoji}</div>
-          </div>
-          <div style="font-size:10px;color:var(--muted);margin:2px 0 5px">📍 ${p.ville}</div>
-          ${rl?`<div style="font-size:9px;color:${rl.urgent?'#EF4444':'#F59E0B'};font-weight:600">${rl.urgent?'🔥':'⏰'} ${rl.label}</div>`:''}
-        </div>`
-      }).join('')}</div>
+      <div class="phdr" style="background:${s.color}">
+        <span class="phdrtitle">${s.label}</span>
+        <span class="pcnt">${cards.length}</span>
+      </div>
+      <div class="pcards">
+        ${isRdv?`<div onclick="openAddModal()" style="border:1.5px dashed rgba(232,164,74,.4);border-radius:8px;padding:8px;text-align:center;cursor:pointer;color:rgba(232,164,74,.7);font-size:11px;transition:all .2s" onmouseover="this.style.background='rgba(232,164,74,.06)'" onmouseout="this.style.background='transparent'">
+          + Ajouter un prospect
+        </div>`:''}
+        ${cards.map(p=>{
+          const tm=getTypeMeta(p),rl=relanceLabel(p)
+          return`<div class="pcard" style="border-left-color:${tm.color}">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between" onclick="openPanel('${p.id}')">
+              <div style="font-size:11px;font-weight:600;color:var(--text)">${p.nom}</div>
+              <div style="font-size:13px">${tm.emoji}</div>
+            </div>
+            <div style="font-size:10px;color:var(--muted);margin:2px 0 5px" onclick="openPanel('${p.id}')">📍 ${p.ville}</div>
+            ${rl?`<div style="font-size:9px;color:${rl.urgent?'#EF4444':'#F59E0B'};font-weight:600;margin-bottom:5px">${rl.urgent?'🔥':'⏰'} ${rl.label}</div>`:''}
+            <div style="display:flex;gap:4px;margin-top:6px">
+              <button onclick="event.stopPropagation();openPanel('${p.id}')" style="flex:1;background:var(--cream);border:none;border-radius:5px;padding:4px;font-size:9px;color:var(--soft);cursor:pointer;font-family:'DM Sans',sans-serif">👁 Voir</button>
+              <button onclick="event.stopPropagation();openLogModal('${p.id}')" style="flex:1;background:var(--navy);border:none;border-radius:5px;padding:4px;font-size:9px;color:white;cursor:pointer;font-family:'DM Sans',sans-serif">✚ Logger</button>
+            </div>
+          </div>`
+        }).join('')}
+      </div>
     </div>`
   }).join('')
 }
@@ -1497,6 +1516,7 @@ function openPanel(id){
       (email?'<a class="abtn pri" href="mailto:'+email+'">✉️ Email</a>':'')+
       '<button class="abtn sec" id="prl2-'+pid+'">📞 Relancer</button>'+
       '<button class="abtn sec" id="plog-'+pid+'" style="background:var(--navy);color:white">✚ Logger</button>'+
+      '<button class="abtn" id="pdel-'+pid+'" style="background:rgba(217,83,79,.08);color:var(--red);border:none;margin-top:6px;width:100%;border-radius:6px;padding:7px;font-size:11px;cursor:pointer">🗑 Supprimer ce prospect</button>'+
     '</div></div>'
 
   document.getElementById('psel-'+pid).addEventListener('change',function(){saveStatus(pid,this.value)})
@@ -1505,6 +1525,22 @@ function openPanel(id){
   document.getElementById('prl-'+pid).addEventListener('click',function(){addRelance(pid)})
   const btn2=document.getElementById('prl2-'+pid);if(btn2)btn2.addEventListener('click',function(){addRelance(pid)})
   const btnLog=document.getElementById('plog-'+pid);if(btnLog)btnLog.addEventListener('click',function(){openLogModal(pid)})
+  const btnDel=document.getElementById('pdel-'+pid);if(btnDel)btnDel.addEventListener('click',function(){deleteProspect(pid)})
+  // Notes edit
+  const editNotesBtn=document.getElementById('edit-notes-btn-'+pid)
+  const notesDisplay=document.getElementById('notes-display-'+pid)
+  const notesEdit=document.getElementById('notes-edit-'+pid)
+  const saveNotesBtn=document.getElementById('save-notes-btn-'+pid)
+  if(editNotesBtn)editNotesBtn.addEventListener('click',function(){
+    notesDisplay.style.display='none';notesEdit.style.display='block';saveNotesBtn.style.display='block'
+    editNotesBtn.style.display='none';notesEdit.focus()
+  })
+  if(saveNotesBtn)saveNotesBtn.addEventListener('click',async function(){
+    const newNotes=notesEdit.value.trim()
+    await db.from('prospects').update({notes:newNotes}).eq('id',pid).eq('user_id',currentUser.id)
+    const p2=prospects.find(x=>x.id===pid);if(p2)p2.notes=newNotes
+    showToast('✓ Notes enregistrées');openPanel(pid)
+  })
 
   document.getElementById('panel').classList.add('open')
 }
@@ -1575,7 +1611,9 @@ async function submitNewProspect(){
     return
   }
 
-  // Succès
+  // Succès — ajouter localement sans attendre le realtime
+  if(data&&data[0])prospects.push(data[0])
+  refresh()
   closeAddModal()
   pendingGeo={lat:null,lng:null}
   ;['add-nom','add-ville','add-adresse','add-prenom','add-nom-dir','add-email','add-notes'].forEach(id=>{
@@ -1677,49 +1715,53 @@ function selectLogProspect(id,nom){
 const CANAL_EMOJIS={gmail:'✉️',whatsapp:'💬',linkedin:'💼',instagram:'📸',appel:'📞',physique:'🤝',autre:'📝'}
 
 async function submitLog(){
-  const pid=document.getElementById('log-prospect-id').value||selectedLogProspectId
-  const action=document.getElementById('log-action').value.trim()
-  const newStatut=document.getElementById('log-statut').value
+  const pid=(document.getElementById('log-prospect-id').value||selectedLogProspectId||'').trim()
+  const action=(document.getElementById('log-action').value||'').trim()
+  const newStatut=document.getElementById('log-statut').value||''
   const wantFollowup=document.getElementById('log-suggest-followup').checked
+
   if(!pid){showToast('Choisissez un prospect');return}
   if(!action){showToast('Décrivez ce qui s\'est passé');return}
+  if(!currentUser){showToast('Erreur : non connecté');return}
 
-  const p=prospects.find(x=>x.id===pid);if(!p)return
+  const p=prospects.find(x=>x.id===pid)
+  if(!p){showToast('Prospect introuvable');return}
+
+  showToast('⏳ Enregistrement...')
+
   const emoji=CANAL_EMOJIS[selectedCanal]||'📝'
-  const label=selectedCanal.charAt(0).toUpperCase()+selectedCanal.slice(1)
-  const histAction=emoji+' '+label+' — '+action
+  const label=selectedCanal?selectedCanal.charAt(0).toUpperCase()+selectedCanal.slice(1):'Autre'
+  const rdvDateEl=document.getElementById('log-rdv-date')
+  const rdvDate=newStatut==='rdv_planifie'&&rdvDateEl&&rdvDateEl.value?new Date(rdvDateEl.value).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):null
+  const histAction=emoji+' '+label+' — '+action+(rdvDate?' · RDV le '+rdvDate:'')
   const today=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'short'})
-
-  // Save history
   const h=[...(p.historique||[]),{date:today,action:histAction,reponse:false,canal:selectedCanal}]
+  if(rdvDate&&updates){updates.rdv_date=rdvDateEl.value}
   const updates={historique:h,updated_at:new Date().toISOString()}
-  if(newStatut)updates.statut=newStatut
+  if(newStatut&&ST[newStatut])updates.statut=newStatut
 
-  await db.from('prospects').update(updates).eq('id',pid).eq('user_id',currentUser.id)
-  p.historique=h;p.updated_at=new Date().toISOString()
-  if(newStatut)p.statut=newStatut
+  const{error}=await db.from('prospects').update(updates).eq('id',pid).eq('user_id',currentUser.id)
+  if(error){showToast('❌ Erreur : '+error.message);console.error(error);return}
 
-  // Save followup if requested
+  // Update local state
+  p.historique=h
+  p.updated_at=new Date().toISOString()
+  if(newStatut&&ST[newStatut])p.statut=newStatut
+
+  // Save followup
   if(wantFollowup){
-    const followups=JSON.parse(localStorage.getItem('followups_'+currentUser.id)||'[]')
-    followups.push({
-      prospect_id:pid,
-      prospect_nom:p.nom,
-      canal:selectedCanal,
-      action:action,
-      date:new Date().toISOString(),
-      done:false
-    })
-    localStorage.setItem('followups_'+currentUser.id,JSON.stringify(followups))
-    // Clear suggestion cache so it rebuilds tomorrow
+    const key='followups_'+currentUser.id
+    const followups=JSON.parse(localStorage.getItem(key)||'[]')
+    followups.push({prospect_id:pid,prospect_nom:p.nom,canal:selectedCanal,action,date:new Date().toISOString(),done:false})
+    localStorage.setItem(key,JSON.stringify(followups))
     localStorage.removeItem('sug_cache')
     localStorage.removeItem('last_sug_date')
   }
 
-  refresh()
   closeLogModal()
-  showToast('✓ Activité enregistrée'+( wantFollowup?' · Suivi prévu demain':''))
+  refresh()
   if(currentPanelId===pid)openPanel(pid)
+  showToast('✅ Activité enregistrée'+(wantFollowup?' · Suivi demain':''))
 }
 
 // ── SUGGESTIONS INTELLIGENTES (avec followups) ──
@@ -2200,6 +2242,33 @@ async function handleCSV(input){
   </div>`
 }
 
+
+async function deleteProspect(id){
+  const p=prospects.find(x=>x.id===id)
+  if(!p)return
+  if(!confirm('Supprimer "'+p.nom+'" définitivement ? Cette action est irréversible.'))return
+  const{error}=await db.from('prospects').delete().eq('id',id).eq('user_id',currentUser.id)
+  if(error){showToast('Erreur : '+error.message);return}
+  prospects=prospects.filter(x=>x.id!==id)
+  closePanel()
+  refresh()
+  showToast('🗑 '+p.nom+' supprimé')
+}
+
+async function deleteHistEntry(pid,index){
+  const p=prospects.find(x=>x.id===pid);if(!p)return
+  const h=[...(p.historique||[])]
+  // index is from reversed slice(-5), need to find real index
+  const fullLen=h.length
+  const sliceStart=Math.max(0,fullLen-5)
+  const realIndex=sliceStart+(4-index) // reversed
+  if(realIndex<0||realIndex>=fullLen)return
+  h.splice(realIndex,1)
+  await db.from('prospects').update({historique:h}).eq('id',pid).eq('user_id',currentUser.id)
+  p.historique=h
+  showToast('✓ Entrée supprimée')
+  openPanel(pid)
+}
 // ── TOAST ──
 function showToast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3500)}
 
