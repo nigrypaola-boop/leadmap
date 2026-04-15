@@ -686,7 +686,7 @@ tbody tr:hover{background:#F9F7F5}
       <!-- Action -->
       <div class="modal-field full">
         <label class="modal-label">Ce qui s'est passé *</label>
-        <input type="text" class="modal-input" id="log-action" placeholder="Ex: Mockup envoyé en DM, RDV confirmé, pas de réponse...">
+        <input type="text" class="modal-input" id="log-action" placeholder="Ex: Mockup envoyé en DM, RDV confirmé, pas de réponse..." oninput="this.style.borderColor=''">
       </div>
 
       <!-- Nouveau statut optionnel -->
@@ -1724,8 +1724,15 @@ async function submitLog(){
   const wantFollowup=document.getElementById('log-suggest-followup').checked
 
   if(!pid){showToast('Choisissez un prospect');return}
-  if(!action){showToast('Décrivez ce qui s\'est passé');return}
   if(!currentUser){showToast('Erreur : non connecté');return}
+  // Action optionnelle si statut changé, sinon obligatoire
+  if(!action&&!newStatut){
+    const el=document.getElementById('log-action')
+    if(el){el.style.borderColor='#EF4444';el.placeholder='⚠️ Décrivez ce qui s\'est passé...';el.focus()}
+    showToast('⚠️ Remplissez le champ ou choisissez un nouveau statut')
+    return
+  }
+  const finalAction=action||(newStatut?'Statut changé : '+(ST[newStatut]?.label||newStatut):'-')
 
   const p=prospects.find(x=>x.id===pid)
   if(!p){showToast('Prospect introuvable');return}
@@ -1736,7 +1743,7 @@ async function submitLog(){
   const label=selectedCanal?selectedCanal.charAt(0).toUpperCase()+selectedCanal.slice(1):'Autre'
   const rdvDateEl=document.getElementById('log-rdv-date')
   const rdvDate=newStatut==='rdv_planifie'&&rdvDateEl&&rdvDateEl.value?new Date(rdvDateEl.value).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):null
-  const histAction=emoji+' '+label+' — '+action+(rdvDate?' · RDV le '+rdvDate:'')
+  const histAction=emoji+' '+label+(finalAction?' — '+finalAction:'')+(rdvDate?' · RDV le '+rdvDate:'')
   const today=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'short'})
   const h=[...(p.historique||[]),{date:today,action:histAction,reponse:false,canal:selectedCanal}]
   if(rdvDate&&updates){updates.rdv_date=rdvDateEl.value}
