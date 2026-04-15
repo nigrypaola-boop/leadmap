@@ -362,6 +362,16 @@ tbody tr:hover{background:#F9F7F5}
   .hstats{display:none}
   .logo{font-size:15px}
 }
+
+/* ── FAB & LOG MODAL ── */
+#fab:hover{transform:scale(1.1);background:var(--navy-soft)}
+#fab:active{transform:scale(.96)}
+.canal-btn{background:var(--cream);border:1px solid rgba(0,0,0,.08);border-radius:7px;padding:6px 10px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;color:var(--soft);transition:all .15s}
+.canal-btn:hover{background:#E5DDD4;color:var(--text)}
+.canal-btn.active{background:var(--navy);color:white;border-color:var(--navy)}
+#log-prospect-results .lp-item{padding:8px 11px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--cream);display:flex;align-items:center;gap:8px}
+#log-prospect-results .lp-item:hover{background:var(--cream)}
+#log-prospect-results .lp-item:last-child{border-bottom:none}
 </style>
 </head>
 <body>
@@ -638,6 +648,75 @@ tbody tr:hover{background:#F9F7F5}
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- BOUTON FLOTTANT -->
+<button id="fab" onclick="openLogModal()" title="Logger une activité" style="position:fixed;bottom:24px;right:24px;width:54px;height:54px;border-radius:50%;background:var(--navy);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,.35),0 0 0 2px rgba(255,255,255,.1);z-index:700;transition:all .2s;font-size:22px">
+  ✚
+</button>
+
+<!-- MODAL LOG ACTIVITÉ -->
+<div class="modal-overlay" id="log-modal">
+  <div class="modal" style="width:440px">
+    <div class="modal-title">Logger une activité</div>
+    <div class="modal-sub" id="log-modal-sub">Notez ce qui s'est passé avec un prospect</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+
+      <!-- Prospect search -->
+      <div class="modal-field full">
+        <label class="modal-label">Prospect *</label>
+        <input type="text" class="modal-input" id="log-prospect-search" placeholder="Tapez un nom pour chercher..." oninput="filterLogProspects()" autocomplete="off">
+        <div id="log-prospect-results" style="max-height:140px;overflow-y:auto;border:1px solid var(--cream);border-radius:7px;margin-top:4px;display:none"></div>
+        <input type="hidden" id="log-prospect-id">
+      </div>
+
+      <!-- Canal -->
+      <div class="modal-field full">
+        <label class="modal-label">Canal</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap" id="log-canaux">
+          <button type="button" class="canal-btn active" data-canal="gmail" onclick="selectCanal(this)">✉️ Gmail</button>
+          <button type="button" class="canal-btn" data-canal="whatsapp" onclick="selectCanal(this)">💬 WhatsApp</button>
+          <button type="button" class="canal-btn" data-canal="linkedin" onclick="selectCanal(this)">💼 LinkedIn</button>
+          <button type="button" class="canal-btn" data-canal="instagram" onclick="selectCanal(this)">📸 Instagram</button>
+          <button type="button" class="canal-btn" data-canal="appel" onclick="selectCanal(this)">📞 Appel</button>
+          <button type="button" class="canal-btn" data-canal="physique" onclick="selectCanal(this)">🤝 Physique</button>
+          <button type="button" class="canal-btn" data-canal="autre" onclick="selectCanal(this)">📝 Autre</button>
+        </div>
+      </div>
+
+      <!-- Action -->
+      <div class="modal-field full">
+        <label class="modal-label">Ce qui s'est passé *</label>
+        <input type="text" class="modal-input" id="log-action" placeholder="Ex: Mockup envoyé en DM, RDV confirmé, pas de réponse...">
+      </div>
+
+      <!-- Nouveau statut optionnel -->
+      <div class="modal-field full">
+        <label class="modal-label">Changer le statut (optionnel)</label>
+        <select class="modal-select" id="log-statut">
+          <option value="">— Garder le statut actuel —</option>
+          <option value="a_contacter">À contacter</option>
+          <option value="email_envoye">Email envoyé</option>
+          <option value="rdv_planifie">RDV planifié</option>
+          <option value="rdv_effectue">RDV effectué</option>
+          <option value="proposition_envoyee">Proposition envoyée</option>
+          <option value="client_actif">Client actif ✓</option>
+          <option value="perdu">Non intéressé</option>
+        </select>
+      </div>
+
+      <!-- Suggérer suivi -->
+      <div style="display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--cream);border-radius:8px">
+        <input type="checkbox" id="log-suggest-followup" style="width:15px;height:15px;accent-color:var(--c-dentaire)">
+        <label for="log-suggest-followup" style="font-size:12px;color:var(--soft);cursor:pointer">Me demander le lendemain si ce prospect a répondu</label>
+      </div>
+
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeLogModal()">Annuler</button>
+      <button class="modal-submit" onclick="submitLog()">Enregistrer</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -1417,6 +1496,7 @@ function openPanel(id){
     '<div class="psec"><div class="pstitle">Actions</div><div class="pactions">'+
       (email?'<a class="abtn pri" href="mailto:'+email+'">✉️ Email</a>':'')+
       '<button class="abtn sec" id="prl2-'+pid+'">📞 Relancer</button>'+
+      '<button class="abtn sec" id="plog-'+pid+'" style="background:var(--navy);color:white">✚ Logger</button>'+
     '</div></div>'
 
   document.getElementById('psel-'+pid).addEventListener('change',function(){saveStatus(pid,this.value)})
@@ -1424,6 +1504,7 @@ function openPanel(id){
   if(addrBtn)addrBtn.addEventListener('click',function(){geocodeAndSave(pid)})
   document.getElementById('prl-'+pid).addEventListener('click',function(){addRelance(pid)})
   const btn2=document.getElementById('prl2-'+pid);if(btn2)btn2.addEventListener('click',function(){addRelance(pid)})
+  const btnLog=document.getElementById('plog-'+pid);if(btnLog)btnLog.addEventListener('click',function(){openLogModal(pid)})
 
   document.getElementById('panel').classList.add('open')
 }
@@ -1481,53 +1562,162 @@ function refresh(){
   else if(currentView==='list')buildList()
 }
 
-// ── SUGGESTIONS MATINALES ──
-async function buildSuggestions(){
-  if(!prospects.length)return
+
+// ── LOG MODAL ──
+let selectedLogProspectId=null,selectedCanal='gmail'
+
+function openLogModal(preselectedId){
+  selectedLogProspectId=preselectedId||null
+  selectedCanal='gmail'
+  document.querySelectorAll('.canal-btn').forEach(b=>b.classList.remove('active'))
+  document.querySelector('.canal-btn[data-canal="gmail"]')?.classList.add('active')
+  document.getElementById('log-action').value=''
+  document.getElementById('log-statut').value=''
+  document.getElementById('log-suggest-followup').checked=true
+  document.getElementById('log-prospect-results').style.display='none'
+  if(preselectedId){
+    const p=prospects.find(x=>x.id===preselectedId)
+    if(p){
+      document.getElementById('log-prospect-search').value=p.nom
+      document.getElementById('log-prospect-id').value=p.id
+      document.getElementById('log-modal-sub').textContent='Activité pour : '+p.nom
+    }
+  }else{
+    document.getElementById('log-prospect-search').value=''
+    document.getElementById('log-prospect-id').value=''
+    document.getElementById('log-modal-sub').textContent='Notez ce qui s\'est passé avec un prospect'
+  }
+  document.getElementById('log-modal').classList.add('open')
+  setTimeout(()=>document.getElementById('log-prospect-search').focus(),100)
+}
+
+function closeLogModal(){
+  document.getElementById('log-modal').classList.remove('open')
+  document.getElementById('log-prospect-results').style.display='none'
+}
+
+function selectCanal(btn){
+  document.querySelectorAll('.canal-btn').forEach(b=>b.classList.remove('active'))
+  btn.classList.add('active')
+  selectedCanal=btn.dataset.canal
+}
+
+function filterLogProspects(){
+  const q=document.getElementById('log-prospect-search').value.toLowerCase()
+  const res=document.getElementById('log-prospect-results')
+  if(!q){res.style.display='none';return}
+  const matches=prospects.filter(p=>p.nom.toLowerCase().includes(q)||p.ville.toLowerCase().includes(q)).slice(0,6)
+  if(!matches.length){res.style.display='none';return}
+  const tm_color=p=>getTypeMeta(p).color
+  res.innerHTML=matches.map(p=>`
+    <div class="lp-item" onclick="selectLogProspect('${p.id}','${p.nom.replace(/'/g,"\\'")}')">
+      <div style="width:22px;height:22px;border-radius:50%;background:${tm_color(p)};display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:white;flex-shrink:0">${cleanInitials(p)}</div>
+      <div><div style="font-weight:600">${p.nom}</div><div style="font-size:10px;color:var(--muted)">${p.ville} · ${(ST[p.statut]||ST.a_contacter).label}</div></div>
+    </div>`).join('')
+  res.style.display='block'
+}
+
+function selectLogProspect(id,nom){
+  selectedLogProspectId=id
+  document.getElementById('log-prospect-search').value=nom
+  document.getElementById('log-prospect-id').value=id
+  document.getElementById('log-prospect-results').style.display='none'
+  document.getElementById('log-modal-sub').textContent='Activité pour : '+nom
+}
+
+const CANAL_EMOJIS={gmail:'✉️',whatsapp:'💬',linkedin:'💼',instagram:'📸',appel:'📞',physique:'🤝',autre:'📝'}
+
+async function submitLog(){
+  const pid=document.getElementById('log-prospect-id').value||selectedLogProspectId
+  const action=document.getElementById('log-action').value.trim()
+  const newStatut=document.getElementById('log-statut').value
+  const wantFollowup=document.getElementById('log-suggest-followup').checked
+  if(!pid){showToast('Choisissez un prospect');return}
+  if(!action){showToast('Décrivez ce qui s\'est passé');return}
+
+  const p=prospects.find(x=>x.id===pid);if(!p)return
+  const emoji=CANAL_EMOJIS[selectedCanal]||'📝'
+  const label=selectedCanal.charAt(0).toUpperCase()+selectedCanal.slice(1)
+  const histAction=emoji+' '+label+' — '+action
+  const today=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'short'})
+
+  // Save history
+  const h=[...(p.historique||[]),{date:today,action:histAction,reponse:false,canal:selectedCanal}]
+  const updates={historique:h,updated_at:new Date().toISOString()}
+  if(newStatut)updates.statut=newStatut
+
+  await db.from('prospects').update(updates).eq('id',pid).eq('user_id',currentUser.id)
+  p.historique=h;p.updated_at=new Date().toISOString()
+  if(newStatut)p.statut=newStatut
+
+  // Save followup if requested
+  if(wantFollowup){
+    const followups=JSON.parse(localStorage.getItem('followups_'+currentUser.id)||'[]')
+    followups.push({
+      prospect_id:pid,
+      prospect_nom:p.nom,
+      canal:selectedCanal,
+      action:action,
+      date:new Date().toISOString(),
+      done:false
+    })
+    localStorage.setItem('followups_'+currentUser.id,JSON.stringify(followups))
+    // Clear suggestion cache so it rebuilds tomorrow
+    localStorage.removeItem('sug_cache')
+    localStorage.removeItem('last_sug_date')
+  }
+
+  refresh()
+  closeLogModal()
+  showToast('✓ Activité enregistrée'+( wantFollowup?' · Suivi prévu demain':''))
+  if(currentPanelId===pid)openPanel(pid)
+}
+
+// ── SUGGESTIONS INTELLIGENTES (avec followups) ──
+function buildSuggestions(){
+  if(!prospects.length||!currentUser)return
   const today=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'short'})
   const lastSugDate=localStorage.getItem('last_sug_date')
-  // Don't regenerate if already done today
   const cached=localStorage.getItem('sug_cache')
   if(lastSugDate===today&&cached){
     renderSuggestions(JSON.parse(cached))
     return
   }
 
-  // Build suggestions locally based on data (no API needed)
   const sugs=[]
+  const followups=JSON.parse(localStorage.getItem('followups_'+currentUser.id)||'[]')
 
-  // RDV today or tomorrow
-  const rdvProspects=prospects.filter(p=>p.statut==='rdv_planifie')
-  rdvProspects.forEach(p=>{
+  // ① Followups — a répondu ?
+  const pendingFollowups=followups.filter(f=>{
+    if(f.done)return false
+    const daysSince=Math.floor((new Date()-new Date(f.date))/864e5)
+    return daysSince>=1
+  })
+  pendingFollowups.slice(0,3).forEach(f=>{
+    const emoji=CANAL_EMOJIS[f.canal]||'📝'
+    sugs.push({
+      type:'followup',
+      emoji:'❓',
+      text:f.prospect_nom+' — '+emoji+' a répondu ?',
+      id:f.prospect_id,
+      followup_id:f.date,
+      urgence:'high'
+    })
+  })
+
+  // ② RDV planifiés
+  prospects.filter(p=>p.statut==='rdv_planifie').forEach(p=>{
     sugs.push({emoji:'📅',text:'RDV planifié avec '+p.nom+' — préparer la présentation',id:p.id,urgence:'high'})
   })
 
-  // Propositions en attente depuis > 3 jours
-  const props=prospects.filter(p=>p.statut==='proposition_envoyee'&&daysSince(p.updated_at)>3)
-  props.slice(0,2).forEach(p=>{
-    const d=daysSince(p.updated_at)
-    sugs.push({emoji:'🔥',text:'Proposition envoyée il y a '+d+'j à '+p.nom+' — bon moment pour appeler',id:p.id,urgence:'high'})
+  // ③ Propositions sans réponse > 3j
+  prospects.filter(p=>p.statut==='proposition_envoyee'&&daysSince(p.updated_at)>3).slice(0,2).forEach(p=>{
+    sugs.push({emoji:'🔥',text:'Proposition à '+p.nom+' — '+daysSince(p.updated_at)+'j sans retour',id:p.id,urgence:'high'})
   })
 
-  // Sans contact depuis > 14 jours
-  const stale=prospects.filter(p=>daysSince(p.updated_at)>14&&!['client_actif','perdu'].includes(p.statut))
-  stale.slice(0,2).forEach(p=>{
+  // ④ Sans contact > 14j
+  prospects.filter(p=>daysSince(p.updated_at)>14&&!['client_actif','perdu'].includes(p.statut)).slice(0,2).forEach(p=>{
     sugs.push({emoji:'⏰',text:'Relancer '+p.nom+' — '+daysSince(p.updated_at)+'j sans contact',id:p.id,urgence:'medium'})
-  })
-
-  // Prospects ayant répondu mais pas encore avancés
-  const responded=prospects.filter(p=>{
-    const h=p.historique||[]
-    return h.some(x=>x.reponse)&&p.statut==='email_envoye'
-  })
-  responded.slice(0,2).forEach(p=>{
-    sugs.push({emoji:'✉️',text:p.nom+' a répondu — envoyer une proposition',id:p.id,urgence:'high'})
-  })
-
-  // Prospects sans adresse sur la carte
-  const noCoords=prospects.filter(p=>!p.lat||!p.lng).slice(0,1)
-  noCoords.forEach(p=>{
-    sugs.push({emoji:'📍',text:'Ajouter adresse de '+p.nom+' pour la carte',id:p.id,urgence:'low'})
   })
 
   const top=sugs.sort((a,b)=>a.urgence==='high'?-1:1).slice(0,5)
@@ -1538,46 +1728,80 @@ async function buildSuggestions(){
 
 function renderSuggestions(sugs){
   if(!sugs.length)return
-  const banner=document.getElementById('suggestions-banner')
-  const items=document.getElementById('sug-items')
-  const colors={high:'rgba(239,68,68,.2)',medium:'rgba(240,180,41,.2)',low:'rgba(59,130,246,.2)'}
-  const textColors={high:'#FCA5A5',medium:'#FCD34D',low:'#93C5FD'}
-  // Load dismissed items
   const dismissed=JSON.parse(localStorage.getItem('sug_dismissed')||'[]')
-  const visible=sugs.filter(s=>!dismissed.includes(s.id+'_'+s.text.slice(0,20)))
+  const visible=sugs.filter(s=>!dismissed.includes(s.id+'_'+(s.text||'').slice(0,20)))
   if(!visible.length)return
 
-  items.innerHTML=visible.map((s,i)=>`
-    <div class="sug-item" id="sug-${i}">
-      <span style="font-size:14px" onclick="openPanel('${s.id}')">${s.emoji}</span>
-      <span class="sug-item-text" onclick="openPanel('${s.id}')">${s.text}</span>
-      <span class="sug-item-badge" style="background:${colors[s.urgence]||colors.low};color:${textColors[s.urgence]||textColors.low}">${s.urgence==='high'?'Urgent':s.urgence==='medium'?'À faire':'Info'}</span>
-      <button onclick="dismissSug('${s.id}','${s.text.slice(0,20)}','sug-${i}')" style="background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;font-size:14px;padding:0 0 0 6px;flex-shrink:0">×</button>
-    </div>`).join('')+
-    `<div class="sug-item" onclick="refreshSuggestions()" style="opacity:.5">
-      <span style="font-size:13px">🔄</span><span class="sug-item-text">Actualiser</span>
+  const colors={high:'rgba(239,68,68,.2)',medium:'rgba(240,180,41,.2)',low:'rgba(59,130,246,.2)'}
+  const tColors={high:'#FCA5A5',medium:'#FCD34D',low:'#93C5FD'}
+
+  document.getElementById('sug-items').innerHTML=visible.map((s,i)=>{
+    const isFollowup=s.type==='followup'
+    const itemId='sug-'+i
+    if(isFollowup){
+      return`<div class="sug-item" id="${itemId}" style="flex-direction:column;align-items:flex-start;gap:6px;min-width:260px">
+        <div style="display:flex;align-items:center;gap:7px;width:100%">
+          <span style="font-size:14px">${s.emoji}</span>
+          <span class="sug-item-text" style="flex:1">${s.text}</span>
+          <button onclick="dismissSug('${s.id}','${(s.text||'').slice(0,20)}','${itemId}')" style="background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;font-size:14px;padding:0">×</button>
+        </div>
+        <div style="display:flex;gap:6px;width:100%">
+          <button onclick="answerFollowup('${s.id}','${s.followup_id}',true,'${itemId}')" style="flex:1;background:rgba(76,175,80,.2);border:1px solid rgba(76,175,80,.3);color:#86EFAC;border-radius:6px;padding:5px;font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;cursor:pointer">✓ Oui, a répondu</button>
+          <button onclick="answerFollowup('${s.id}','${s.followup_id}',false,'${itemId}')" style="flex:1;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.2);color:#FCA5A5;border-radius:6px;padding:5px;font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;cursor:pointer">✗ Non</button>
+        </div>
+      </div>`
+    }
+    return`<div class="sug-item" id="${itemId}" onclick="openPanel('${s.id}')">
+      <span style="font-size:14px">${s.emoji}</span>
+      <span class="sug-item-text">${s.text}</span>
+      <span class="sug-item-badge" style="background:${colors[s.urgence]||colors.low};color:${tColors[s.urgence]||tColors.low}">${s.urgence==='high'?'Urgent':s.urgence==='medium'?'À faire':'Info'}</span>
+      <button onclick="event.stopPropagation();dismissSug('${s.id}','${(s.text||'').slice(0,20)}','${itemId}')" style="background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;font-size:14px;padding:0 0 0 4px">×</button>
     </div>`
-  banner.classList.add('visible')
+  }).join('')+
+  `<div class="sug-item" onclick="refreshSuggestions()" style="opacity:.5;min-width:auto">
+    <span style="font-size:13px">🔄</span><span class="sug-item-text">Actualiser</span>
+  </div>`
+
+  document.getElementById('suggestions-banner').classList.add('visible')
 }
 
-function dismissSug(id,textKey,elId){
-  const dismissed=JSON.parse(localStorage.getItem('sug_dismissed')||'[]')
-  dismissed.push(id+'_'+textKey)
-  localStorage.setItem('sug_dismissed',JSON.stringify(dismissed))
+function answerFollowup(prospectId,followupId,answered,elId){
+  // Mark followup as done
+  const key='followups_'+currentUser.id
+  const followups=JSON.parse(localStorage.getItem(key)||'[]')
+  const idx=followups.findIndex(f=>f.prospect_id===prospectId&&f.date===followupId)
+  if(idx!==-1){followups[idx].done=true;localStorage.setItem(key,JSON.stringify(followups))}
+
   const el=document.getElementById(elId)
-  if(el)el.style.display='none'
-  // Hide banner if no more items
-  const items=document.querySelectorAll('.sug-item')
-  const visible=[...items].filter(el=>el.style.display!=='none'&&!el.onclick?.toString().includes('refresh'))
-  if(visible.length<=1)document.getElementById('suggestions-banner').classList.remove('visible')
+  if(answered){
+    // Show next actions
+    if(el){
+      el.innerHTML=`<div style="font-size:11px;color:rgba(255,255,255,.7);margin-bottom:6px">Super ! Quelle suite ?</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          <button onclick="quickAction('${prospectId}','rdv_planifie','${elId}')" style="background:rgba(232,164,74,.2);border:1px solid rgba(232,164,74,.3);color:#FCD34D;border-radius:6px;padding:5px 9px;font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;cursor:pointer">📅 Proposer un RDV</button>
+          <button onclick="quickAction('${prospectId}','proposition_envoyee','${elId}')" style="background:rgba(139,107,179,.2);border:1px solid rgba(139,107,179,.3);color:#C4B5FD;border-radius:6px;padding:5px 9px;font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;cursor:pointer">📄 Envoyer une proposition</button>
+          <button onclick="dismissSug('${prospectId}','','${elId}')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);border-radius:6px;padding:5px 9px;font-family:'DM Sans',sans-serif;font-size:10px;cursor:pointer">Fermer</button>
+        </div>`
+    }
+  }else{
+    // No response — suggest actions
+    if(el){
+      el.innerHTML=`<div style="font-size:11px;color:rgba(255,255,255,.7);margin-bottom:6px">Pas de réponse. Que faire ?</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          <button onclick="openLogModal('${prospectId}');dismissSug('${prospectId}','','${elId}')" style="background:rgba(240,180,41,.15);border:1px solid rgba(240,180,41,.25);color:#FCD34D;border-radius:6px;padding:5px 9px;font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;cursor:pointer">🔄 Relancer</button>
+          <button onclick="quickAction('${prospectId}','perdu','${elId}')" style="background:rgba(217,83,79,.1);border:1px solid rgba(217,83,79,.2);color:#FCA5A5;border-radius:6px;padding:5px 9px;font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;cursor:pointer">✗ Non intéressé</button>
+          <button onclick="dismissSug('${prospectId}','','${elId}')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);border-radius:6px;padding:5px 9px;font-family:'DM Sans',sans-serif;font-size:10px;cursor:pointer">Attendre</button>
+        </div>`
+    }
+  }
 }
 
-function refreshSuggestions(){
-  localStorage.removeItem('sug_cache')
-  localStorage.removeItem('last_sug_date')
-  localStorage.removeItem('sug_dismissed')
-  buildSuggestions()
+async function quickAction(prospectId,newStatut,elId){
+  await saveStatus(prospectId,newStatut)
+  dismissSug(prospectId,'',elId)
+  showToast('✓ '+ST[newStatut].label)
 }
+
 
 // ── GÉOLOCALISATION MANUELLE DANS LE PANEL ──
 async function geocodeAndSave(prospectId){
@@ -1918,6 +2142,7 @@ async function handleCSV(input){
 function showToast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3500)}
 
 document.getElementById('add-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAddModal()})
+document.getElementById('log-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeLogModal()})
 
 init()
 </script>
