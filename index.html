@@ -294,6 +294,35 @@ tbody tr:hover{background:#F9F7F5}
 .addr-btn{background:var(--c-dentaire);color:white;border:none;border-radius:6px;padding:7px 12px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap}
 .addr-status{font-size:10px;margin-top:4px;min-height:14px}
 .addr-status.ok{color:var(--green)}.addr-status.err{color:var(--red)}.addr-status.loading{color:var(--muted)}
+
+/* ── INSIGHTS ── */
+#insights-view{display:none;height:100%;overflow-y:auto;background:var(--cream);padding:20px}
+#insights-view.active{display:block}
+#insights-view::-webkit-scrollbar{width:4px}
+#insights-view::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:4px}
+.ins-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;max-width:1000px;margin:0 auto}
+.ins-card{background:white;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(13,27,42,.08);border:1px solid rgba(0,0,0,.04)}
+.ins-card.alert{border-left:3px solid #F0B429}
+.ins-card.success{border-left:3px solid #4CAF50}
+.ins-card.info{border-left:3px solid var(--c-dentaire)}
+.ins-card.danger{border-left:3px solid #EF4444}
+.ins-title{font-family:'Geist',sans-serif;font-size:14px;font-weight:700;color:var(--text);margin-bottom:3px;letter-spacing:-.01em}
+.ins-sub{font-size:11px;color:var(--muted);margin-bottom:12px}
+.ins-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;background:rgba(240,180,41,.15);color:#92400E}
+.ins-badge.hot{background:rgba(239,68,68,.12);color:#B91C1C}
+.ins-badge.new{background:rgba(59,130,246,.12);color:#1D4ED8}
+.ins-item{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:8px;background:rgba(0,0,0,.025);margin-bottom:5px;cursor:pointer;transition:background .15s}
+.ins-item:hover{background:rgba(0,0,0,.05)}
+.ins-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;flex-shrink:0}
+.ins-item-name{font-size:12px;font-weight:600;color:var(--text)}
+.ins-item-sub{font-size:10px;color:var(--muted)}
+.ins-item-badge{margin-left:auto;font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;white-space:nowrap;flex-shrink:0}
+.ins-stat-row{display:flex;gap:8px;margin-bottom:12px}
+.ins-stat{flex:1;background:rgba(0,0,0,.03);border-radius:8px;padding:10px;text-align:center}
+.ins-stat-num{font-family:'Geist',sans-serif;font-size:22px;font-weight:700;color:var(--text);line-height:1}
+.ins-stat-lbl{font-size:10px;color:var(--muted);margin-top:2px}
+.ins-page-title{font-family:'Geist',sans-serif;font-size:20px;font-weight:700;color:var(--navy);letter-spacing:-.02em;margin-bottom:4px;max-width:1000px;margin-left:auto;margin-right:auto;padding-bottom:4px}
+.ins-page-sub{font-size:12px;color:var(--muted);max-width:1000px;margin:0 auto 16px}
 </style>
 </head>
 <body>
@@ -322,6 +351,7 @@ tbody tr:hover{background:#F9F7F5}
       <button class="tab-btn active" onclick="switchView('map')" id="tab-map">🗺 Carte</button>
       <button class="tab-btn" onclick="switchView('pipeline')" id="tab-pipeline">📋 Pipeline</button>
       <button class="tab-btn" onclick="switchView('list')" id="tab-list">📊 Liste</button>
+      <button class="tab-btn" onclick="switchView('insights')" id="tab-insights">✦ Insights</button>
       <button class="tab-btn ig" onclick="switchView('instagram')" id="tab-instagram">📸 Instagram</button>
     </nav>
     <button class="add-btn" onclick="openAddModal()">+ Prospect</button>
@@ -392,6 +422,13 @@ tbody tr:hover{background:#F9F7F5}
       </div>
 
 
+
+      <!-- INSIGHTS -->
+      <div id="insights-view">
+        <div class="ins-page-title">✦ Insights & Opportunités</div>
+        <div class="ins-page-sub">Analyse de votre pipeline · Mis à jour en temps réel</div>
+        <div class="ins-grid" id="insights-grid"></div>
+      </div>
 
       <!-- INSTAGRAM -->
       <div id="instagram-view">
@@ -1271,10 +1308,12 @@ function switchView(v){
   document.getElementById('map-view').style.display=v==='map'?'block':'none'
   document.getElementById('pipeline-view').classList.toggle('active',v==='pipeline')
   document.getElementById('list-view').classList.toggle('active',v==='list')
+  document.getElementById('insights-view').classList.toggle('active',v==='insights')
   document.getElementById('instagram-view').classList.toggle('active',v==='instagram')
   if(v==='map'){initMap();setTimeout(()=>leafletMap?.invalidateSize(),100)}
   else if(v==='pipeline')buildPipeline()
   else if(v==='list')buildList()
+  else if(v==='insights')buildInsights()
   else if(v==='instagram')loadInstagramStats()
 }
 
@@ -1346,13 +1385,41 @@ function renderSuggestions(sugs){
   const items=document.getElementById('sug-items')
   const colors={high:'rgba(239,68,68,.2)',medium:'rgba(240,180,41,.2)',low:'rgba(59,130,246,.2)'}
   const textColors={high:'#FCA5A5',medium:'#FCD34D',low:'#93C5FD'}
-  items.innerHTML=sugs.map(s=>`
-    <div class="sug-item" onclick="openPanel('${s.id}')">
-      <span style="font-size:14px">${s.emoji}</span>
-      <span class="sug-item-text">${s.text}</span>
+  // Load dismissed items
+  const dismissed=JSON.parse(localStorage.getItem('sug_dismissed')||'[]')
+  const visible=sugs.filter(s=>!dismissed.includes(s.id+'_'+s.text.slice(0,20)))
+  if(!visible.length)return
+
+  items.innerHTML=visible.map((s,i)=>`
+    <div class="sug-item" id="sug-${i}">
+      <span style="font-size:14px" onclick="openPanel('${s.id}')">${s.emoji}</span>
+      <span class="sug-item-text" onclick="openPanel('${s.id}')">${s.text}</span>
       <span class="sug-item-badge" style="background:${colors[s.urgence]||colors.low};color:${textColors[s.urgence]||textColors.low}">${s.urgence==='high'?'Urgent':s.urgence==='medium'?'À faire':'Info'}</span>
-    </div>`).join('')
+      <button onclick="dismissSug('${s.id}','${s.text.slice(0,20)}','sug-${i}')" style="background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;font-size:14px;padding:0 0 0 6px;flex-shrink:0">×</button>
+    </div>`).join('')+
+    `<div class="sug-item" onclick="refreshSuggestions()" style="opacity:.5">
+      <span style="font-size:13px">🔄</span><span class="sug-item-text">Actualiser</span>
+    </div>`
   banner.classList.add('visible')
+}
+
+function dismissSug(id,textKey,elId){
+  const dismissed=JSON.parse(localStorage.getItem('sug_dismissed')||'[]')
+  dismissed.push(id+'_'+textKey)
+  localStorage.setItem('sug_dismissed',JSON.stringify(dismissed))
+  const el=document.getElementById(elId)
+  if(el)el.style.display='none'
+  // Hide banner if no more items
+  const items=document.querySelectorAll('.sug-item')
+  const visible=[...items].filter(el=>el.style.display!=='none'&&!el.onclick?.toString().includes('refresh'))
+  if(visible.length<=1)document.getElementById('suggestions-banner').classList.remove('visible')
+}
+
+function refreshSuggestions(){
+  localStorage.removeItem('sug_cache')
+  localStorage.removeItem('last_sug_date')
+  localStorage.removeItem('sug_dismissed')
+  buildSuggestions()
 }
 
 // ── GÉOLOCALISATION MANUELLE DANS LE PANEL ──
@@ -1382,6 +1449,111 @@ async function geocodeAndSave(prospectId){
   }catch(e){
     status.textContent='Erreur de géolocalisation';status.className='addr-status err'
   }
+}
+
+
+// ── INSIGHTS DASHBOARD ──
+function buildInsights(){
+  const el=document.getElementById('insights-grid')
+  if(!el)return
+  const total=prospects.length
+  const clients=prospects.filter(p=>p.statut==='client_actif')
+  const actifs=prospects.filter(p=>['rdv_planifie','rdv_effectue','proposition_envoyee'].includes(p.statut))
+  const avecReponse=prospects.filter(p=>(p.historique||[]).some(h=>h.reponse))
+  const aRelancer=prospects.filter(p=>daysSince(p.updated_at)>7&&!['client_actif','perdu'].includes(p.statut))
+  const tauxReponse=total?Math.round(avecReponse.length/total*100):0
+  const tauxConversion=total?Math.round(clients.length/total*100):0
+  const chauds=prospects.filter(p=>(p.historique||[]).some(h=>h.reponse)&&!['client_actif','perdu'].includes(p.statut)).slice(0,4)
+  const urgents=aRelancer.sort((a,b)=>daysSince(b.updated_at)-daysSince(a.updated_at)).slice(0,4)
+  const props=prospects.filter(p=>p.statut==='proposition_envoyee').slice(0,3)
+  const byType={}
+  prospects.forEach(p=>{const t=resolveType(p.type);byType[t]=(byType[t]||0)+1})
+  const byVille={}
+  prospects.forEach(p=>{const v=(p.ville||'').split('(')[0].trim();if(v)byVille[v]=(byVille[v]||0)+1})
+  const topVilles=Object.entries(byVille).sort((a,b)=>b[1]-a[1]).slice(0,5)
+
+  el.innerHTML=`
+    <div class="ins-card">
+      <div class="ins-title">Vue d'ensemble</div>
+      <div class="ins-sub">Performance de votre pipeline</div>
+      <div class="ins-stat-row">
+        <div class="ins-stat"><div class="ins-stat-num">${total}</div><div class="ins-stat-lbl">Prospects</div></div>
+        <div class="ins-stat"><div class="ins-stat-num" style="color:#F59E0B">${actifs.length}</div><div class="ins-stat-lbl">En cours</div></div>
+        <div class="ins-stat"><div class="ins-stat-num" style="color:#10B981">${clients.length}</div><div class="ins-stat-lbl">Clients</div></div>
+      </div>
+      <div class="ins-stat-row">
+        <div class="ins-stat"><div class="ins-stat-num">${tauxReponse}%</div><div class="ins-stat-lbl">Taux réponse</div></div>
+        <div class="ins-stat"><div class="ins-stat-num">${tauxConversion}%</div><div class="ins-stat-lbl">Conversion</div></div>
+        <div class="ins-stat"><div class="ins-stat-num" style="color:#EF4444">${urgents.length}</div><div class="ins-stat-lbl">À relancer</div></div>
+      </div>
+    </div>
+
+    <div class="ins-card info">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+        <div class="ins-title">Prospects chauds</div>
+        <span class="ins-badge new">${chauds.length}</span>
+      </div>
+      <div class="ins-sub">Ont répondu · à convertir en proposition</div>
+      ${chauds.map(p=>{const tm=getTypeMeta(p);return`
+        <div class="ins-item" onclick="openPanel('${p.id}')">
+          <div class="ins-av" style="background:${tm.color}">${cleanInitials(p)}</div>
+          <div style="flex:1"><div class="ins-item-name">${p.nom}</div><div class="ins-item-sub">${p.ville} · ${(ST[p.statut]||ST.a_contacter).label}</div></div>
+          <span class="ins-item-badge" style="background:rgba(59,130,246,.12);color:#1D4ED8">A répondu ✉️</span>
+        </div>`}).join('')||'<div style="font-size:12px;color:var(--muted);padding:8px">Aucun pour le moment</div>'}
+    </div>
+
+    <div class="ins-card danger">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+        <div class="ins-title">Relances urgentes</div>
+        <span class="ins-badge hot">${urgents.length}</span>
+      </div>
+      <div class="ins-sub">Plus de 7 jours sans contact</div>
+      ${urgents.map(p=>{const tm=getTypeMeta(p),d=daysSince(p.updated_at);return`
+        <div class="ins-item" onclick="openPanel('${p.id}')">
+          <div class="ins-av" style="background:${tm.color}">${cleanInitials(p)}</div>
+          <div style="flex:1"><div class="ins-item-name">${p.nom}</div><div class="ins-item-sub">${p.ville}</div></div>
+          <span class="ins-item-badge" style="background:rgba(239,68,68,.12);color:#B91C1C">${d}j</span>
+        </div>`}).join('')||'<div style="font-size:12px;color:var(--muted);padding:8px">✅ Tout est à jour !</div>'}
+    </div>
+
+    ${props.length?`<div class="ins-card alert">
+      <div class="ins-title">Propositions en attente</div>
+      <div class="ins-sub">En attente de réponse</div>
+      ${props.map(p=>{const tm=getTypeMeta(p),d=daysSince(p.updated_at);return`
+        <div class="ins-item" onclick="openPanel('${p.id}')">
+          <div class="ins-av" style="background:${tm.color}">${cleanInitials(p)}</div>
+          <div style="flex:1"><div class="ins-item-name">${p.nom}</div><div class="ins-item-sub">Proposition envoyée il y a ${d}j</div></div>
+          <span class="ins-item-badge" style="background:rgba(240,180,41,.15);color:#92400E">${d>5?'Relancer':'En cours'}</span>
+        </div>`}).join('')}
+    </div>`:''}
+
+    <div class="ins-card">
+      <div class="ins-title">Répartition par type</div>
+      <div class="ins-sub">Composition de votre portefeuille</div>
+      ${Object.entries(TYPES).map(([key,tm])=>{
+        const n=byType[key]||0,pct=total?Math.round(n/total*100):0
+        return`<div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:11px;color:var(--text)">${tm.emoji} ${tm.label}</span>
+            <span style="font-size:11px;font-weight:600">${n} <span style="color:var(--muted);font-weight:400">(${pct}%)</span></span>
+          </div>
+          <div style="height:5px;background:var(--cream);border-radius:99px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${tm.color};border-radius:99px"></div>
+          </div>
+        </div>`}).join('')}
+    </div>
+
+    <div class="ins-card">
+      <div class="ins-title">Top villes</div>
+      <div class="ins-sub">Concentration géographique</div>
+      ${topVilles.map(([ville,n],i)=>`
+        <div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--cream)">
+          <div style="width:20px;height:20px;border-radius:50%;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--muted)">${i+1}</div>
+          <div style="flex:1;font-size:12px;font-weight:600;color:var(--text)">${ville}</div>
+          <div style="font-size:11px;color:var(--muted)">${n} prospect${n>1?'s':''}</div>
+        </div>`).join('')}
+    </div>
+  `
 }
 
 // ── TOAST ──
