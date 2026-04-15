@@ -323,6 +323,45 @@ tbody tr:hover{background:#F9F7F5}
 .ins-stat-lbl{font-size:10px;color:var(--muted);margin-top:2px}
 .ins-page-title{font-family:'Geist',sans-serif;font-size:20px;font-weight:700;color:var(--navy);letter-spacing:-.02em;margin-bottom:4px;max-width:1000px;margin-left:auto;margin-right:auto;padding-bottom:4px}
 .ins-page-sub{font-size:12px;color:var(--muted);max-width:1000px;margin:0 auto 16px}
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 768px) {
+  body{overflow:auto}
+  #app{height:auto;min-height:100vh}
+  header{padding:0 12px;height:auto;min-height:54px;flex-wrap:wrap;gap:8px;padding:8px 12px}
+  .nav-tabs{width:100%;order:3;overflow-x:auto;padding-bottom:2px}
+  .nav-tabs::-webkit-scrollbar{height:0}
+  .hright{gap:8px}
+  .hstats{gap:8px}
+  .hnum{font-size:12px}
+  .hlbl{font-size:8px}
+  .uemail{display:none}
+  .add-btn{padding:5px 10px;font-size:10px}
+  .sync-btn{padding:5px 8px;font-size:10px}
+  .main{flex-direction:column}
+  .sidebar{width:100%;height:auto;max-height:180px;flex-direction:row;overflow-x:auto;border-right:none;border-bottom:1px solid rgba(255,255,255,.06)}
+  .sidebar .sb-sec{border-bottom:none;border-right:1px solid rgba(255,255,255,.06);padding:8px;min-width:120px;flex-shrink:0}
+  .mini-list{display:none}
+  .content{flex:1;min-height:60vh}
+  #map,#map-deco{height:60vh}
+  .panel{width:100%;height:85vh;top:auto;bottom:0;right:0;left:0;border-radius:20px 20px 0 0;transform:translateY(100%)}
+  .panel.open{transform:translateY(0)}
+  #pipeline-view{padding:10px;gap:8px}
+  .pcol{min-width:160px;max-width:160px}
+  #list-view{padding:10px}
+  .ltable-wrap{font-size:10px}
+  th,td{padding:7px 8px}
+  #settings-view{padding:12px}
+  #insights-view{padding:12px}
+  .ins-grid{grid-template-columns:1fr}
+  .modal{width:95vw;margin:10px;padding:18px}
+  .modal-grid{grid-template-columns:1fr}
+  .modal-field.full{grid-column:1}
+}
+@media (max-width:480px){
+  .hstats{display:none}
+  .logo{font-size:15px}
+}
 </style>
 </head>
 <body>
@@ -345,6 +384,57 @@ tbody tr:hover{background:#F9F7F5}
 </div>
 
 <div id="app">
+  <!-- ONBOARDING -->
+  <div id="onboarding" style="display:none;position:fixed;inset:0;background:var(--navy);z-index:500;overflow-y:auto;padding:40px 20px">
+    <div style="max-width:560px;margin:0 auto">
+      <div style="font-family:'Geist',sans-serif;font-size:28px;font-weight:700;color:white;margin-bottom:6px;letter-spacing:-.02em;display:flex;align-items:center;gap:10px">
+        <div style="width:10px;height:10px;border-radius:50%;background:var(--gold)"></div>LeadMap
+      </div>
+      <div style="font-size:14px;color:var(--muted);margin-bottom:32px">Bienvenue ! Commençons par configurer votre espace.</div>
+
+      <!-- Step 1: Types -->
+      <div id="ob-step1">
+        <div style="background:var(--navy-mid);border-radius:14px;padding:24px;margin-bottom:16px;border:1px solid rgba(255,255,255,.08)">
+          <div style="font-size:16px;font-weight:600;color:white;margin-bottom:4px">1. Vos types de prospects</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Définissez vos catégories. Vous pourrez les modifier dans Paramètres.</div>
+          <div id="ob-types-list"></div>
+          <button onclick="addObTypeRow()" style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.15);border-radius:8px;padding:9px 14px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--muted);cursor:pointer;width:100%;margin-top:8px">
+            + Ajouter un type
+          </button>
+        </div>
+        <button onclick="obNext()" style="width:100%;background:var(--c-dentaire);color:white;border:none;border-radius:10px;padding:14px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer">
+          Continuer →
+        </button>
+      </div>
+
+      <!-- Step 2: Add prospects -->
+      <div id="ob-step2" style="display:none">
+        <div style="background:var(--navy-mid);border-radius:14px;padding:24px;margin-bottom:16px;border:1px solid rgba(255,255,255,.08)">
+          <div style="font-size:16px;font-weight:600;color:white;margin-bottom:4px">2. Ajoutez vos premiers prospects</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:20px">Importez un fichier CSV ou commencez manuellement.</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <label style="display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:16px;cursor:pointer;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.09)'" onmouseout="this.style.background='rgba(255,255,255,.05)'">
+              <span style="font-size:28px">📂</span>
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:600;color:white">Importer un fichier CSV</div>
+                <div style="font-size:11px;color:var(--muted)">Excel, Google Sheets → Exporter en CSV puis importer ici</div>
+              </div>
+              <input type="file" accept=".csv" style="display:none" onchange="handleObCSV(this)">
+            </label>
+            <button onclick="skipOnboarding()" style="display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:16px;cursor:pointer;width:100%;text-align:left;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.09)'" onmouseout="this.style.background='rgba(255,255,255,.05)'">
+              <span style="font-size:28px">✏️</span>
+              <div>
+                <div style="font-size:13px;font-weight:600;color:white">Commencer manuellement</div>
+                <div style="font-size:11px;color:var(--muted)">Ajoutez vos prospects un par un avec le bouton + Prospect</div>
+              </div>
+            </button>
+          </div>
+          <div id="ob-csv-preview" style="margin-top:14px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <header>
     <div class="logo"><div class="logo-dot"></div>LeadMap</div>
     <nav class="nav-tabs">
@@ -353,6 +443,7 @@ tbody tr:hover{background:#F9F7F5}
       <button class="tab-btn" onclick="switchView('list')" id="tab-list">📊 Liste</button>
       <button class="tab-btn" onclick="switchView('insights')" id="tab-insights">✦ Insights</button>
       <button class="tab-btn ig" onclick="switchView('instagram')" id="tab-instagram">📸 Instagram</button>
+      <button class="tab-btn" onclick="switchView('settings')" id="tab-settings">⚙️ Paramètres</button>
     </nav>
     <button class="add-btn" onclick="openAddModal()">+ Prospect</button>
     <button class="sync-btn" id="sync-btn" onclick="syncGmail()">⚡ Sync Gmail</button>
@@ -382,11 +473,7 @@ tbody tr:hover{background:#F9F7F5}
     <aside class="sidebar">
       <div class="sb-sec">
         <div class="sb-title">Type</div>
-        <button class="fbtn active" onclick="filterType('all')" id="filter-all"><div class="fdot" style="background:var(--muted)"></div>Tous<span class="fcnt" id="cnt-all">—</span></button>
-        <button class="fbtn" onclick="filterType('clinique_dentaire')" id="filter-clinique_dentaire"><div class="fdot" style="background:var(--c-dentaire)"></div>Cl. dentaires<span class="fcnt" id="cnt-cd">—</span></button>
-        <button class="fbtn" onclick="filterType('clinique_esthetique')" id="filter-clinique_esthetique"><div class="fdot" style="background:var(--c-esthetique);border:1px solid rgba(255,255,255,.2)"></div>Cl. esthétiques<span class="fcnt" id="cnt-ce">—</span></button>
-        <button class="fbtn" onclick="filterType('institut')" id="filter-institut"><div class="fdot" style="background:var(--c-institut)"></div>Instituts<span class="fcnt" id="cnt-ins">—</span></button>
-        <button class="fbtn" onclick="filterType('independant')" id="filter-independant"><div class="fdot" style="background:var(--c-independant)"></div>Médecins indép.<span class="fcnt" id="cnt-ind">—</span></button>
+        <div id="type-filters"></div>
       </div>
       <div class="sb-sec"><div class="sb-title">Statut</div><div id="sfilt"></div></div>
       <div style="padding:8px 11px 4px"><div class="sb-title">Prospects</div></div>
@@ -437,6 +524,53 @@ tbody tr:hover{background:#F9F7F5}
           <button class="ig-connect-btn" onclick="showIgConnect()">🔗 Connecter le compte</button>
         </div>
         <div id="ig-content"></div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div id="settings-view" style="display:none;height:100%;overflow-y:auto;background:var(--cream);padding:20px">
+        <div style="max-width:700px;margin:0 auto">
+          <div style="font-family:'Geist',sans-serif;font-size:20px;font-weight:700;color:var(--navy);margin-bottom:4px;letter-spacing:-.02em">⚙️ Paramètres</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:24px">Personnalisez votre espace LeadMap</div>
+
+          <!-- Types de prospects -->
+          <div style="background:white;border-radius:12px;padding:20px;box-shadow:var(--shadow-sm);margin-bottom:16px">
+            <div style="font-family:'Geist',sans-serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px">Types de prospects</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Définissez vos catégories et couleurs</div>
+            <div id="types-list"></div>
+            <button onclick="addTypeRow()" style="display:flex;align-items:center;gap:6px;background:var(--cream);border:1px dashed rgba(0,0,0,.15);border-radius:8px;padding:9px 14px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--soft);cursor:pointer;width:100%;margin-top:8px">
+              + Ajouter un type
+            </button>
+          </div>
+
+          <!-- Import CSV -->
+          <div style="background:white;border-radius:12px;padding:20px;box-shadow:var(--shadow-sm);margin-bottom:16px">
+            <div style="font-family:'Geist',sans-serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px">Importer des prospects</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Fichier CSV avec colonnes : Nom, Email, Téléphone, Ville, Type, Statut (optionnels)</div>
+            <label style="display:flex;align-items:center;gap:10px;background:var(--cream);border:2px dashed rgba(0,0,0,.12);border-radius:10px;padding:20px;cursor:pointer;transition:all .2s" id="csv-drop-zone">
+              <span style="font-size:24px">📂</span>
+              <div>
+                <div style="font-size:13px;font-weight:600;color:var(--text)">Choisir un fichier CSV</div>
+                <div style="font-size:11px;color:var(--muted)">ou glisser-déposer ici</div>
+              </div>
+              <input type="file" accept=".csv,.tsv,.txt" id="csv-input" style="display:none" onchange="handleCSV(this)">
+            </label>
+            <div id="csv-preview" style="margin-top:12px"></div>
+          </div>
+
+          <!-- Export -->
+          <div style="background:white;border-radius:12px;padding:20px;box-shadow:var(--shadow-sm);margin-bottom:16px">
+            <div style="font-family:'Geist',sans-serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px">Exporter mes données</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Télécharger tous vos prospects en CSV</div>
+            <button onclick="exportCSV()" style="background:var(--navy);color:white;border:none;border-radius:8px;padding:9px 18px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer">⬇ Exporter en CSV</button>
+          </div>
+
+          <!-- Compte -->
+          <div style="background:white;border-radius:12px;padding:20px;box-shadow:var(--shadow-sm)">
+            <div style="font-family:'Geist',sans-serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:14px">Mon compte</div>
+            <div style="font-size:12px;color:var(--soft);margin-bottom:14px" id="settings-email">—</div>
+            <button onclick="doLogout()" style="background:rgba(217,83,79,.1);color:var(--red);border:none;border-radius:8px;padding:9px 18px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Se déconnecter</button>
+          </div>
+        </div>
       </div>
 
       <!-- PANEL -->
@@ -520,15 +654,37 @@ let pendingGeo={lat:null,lng:null},geoTimer=null
 let igToken=localStorage.getItem('ig_token')||null
 let chatHistory=[]
 
-// ── TYPES ──
-const TYPES={
-  clinique_dentaire:  {label:'Clinique dentaire',  color:'#3B82F6',css:'dentaire', emoji:'🦷'},
-  clinique_esthetique:{label:'Clinique esthétique', color:'#1C1917',css:'esthetique',emoji:'✨'},
-  institut:           {label:'Institut de beauté',  color:'#EC4899',css:'institut', emoji:'💆'},
-  independant:        {label:'Médecin indépendant', color:'#6B7280',css:'independant',emoji:'👨‍⚕️'},
+// ── TYPES (dynamiques, personnalisables par utilisateur) ──
+const DEFAULT_TYPES={
+  clinique_dentaire:  {label:'Clinique dentaire',  color:'#3B82F6', emoji:'🦷'},
+  clinique_esthetique:{label:'Clinique esthétique', color:'#1C1917', emoji:'✨'},
+  institut:           {label:'Institut de beauté',  color:'#EC4899', emoji:'💆'},
+  independant:        {label:'Médecin indépendant', color:'#6B7280', emoji:'👨‍⚕️'},
 }
-function resolveType(t){return TYPES[t]?t:t==='clinique'?'clinique_esthetique':t==='institut'?'institut':'clinique_dentaire'}
-function getTypeMeta(p){return TYPES[resolveType(p.type)]||TYPES.clinique_esthetique}
+let TYPES={...DEFAULT_TYPES}
+
+function loadUserTypes(){
+  if(!currentUser)return
+  const saved=localStorage.getItem('types_'+currentUser.id)
+  if(saved){try{TYPES=JSON.parse(saved)}catch{TYPES={...DEFAULT_TYPES}}}
+  else TYPES={...DEFAULT_TYPES}
+}
+function saveUserTypes(){
+  if(!currentUser)return
+  localStorage.setItem('types_'+currentUser.id,JSON.stringify(TYPES))
+}
+function resolveType(t){
+  if(TYPES[t])return t
+  // Legacy fallback
+  if(t==='clinique')return'clinique_esthetique'
+  if(t==='institut')return'institut'
+  const first=Object.keys(TYPES)[0]
+  return first||'autre'
+}
+function getTypeMeta(p){
+  const rt=resolveType(p.type)
+  return TYPES[rt]||Object.values(TYPES)[0]||{label:'Autre',color:'#6B7280',emoji:'📌'}
+}
 
 // ── STATUTS ──
 const ST={
@@ -581,7 +737,8 @@ async function showApp(){
   document.getElementById('app').style.display='flex'
   document.getElementById('loading').classList.add('gone')
   const em=currentUser.email;document.getElementById('uem').textContent=em;document.getElementById('uav').textContent=em[0].toUpperCase()
-  await loadData();subscribeRT();await new Promise(r=>setTimeout(r,100));initMap();buildSuggestions()
+  loadUserTypes();await loadData();subscribeRT();await new Promise(r=>setTimeout(r,100));initMap();buildSuggestions()
+  if(prospects.length===0)showOnboarding()
 }
 
 // ── DATA ──
@@ -1087,10 +1244,7 @@ function updateStats(){
   document.getElementById('st-cli').textContent=prospects.filter(p=>p.statut==='client_actif').length
   document.getElementById('st-feu').textContent=prospects.filter(p=>daysSince(p.updated_at)>7&&p.statut!=='client_actif'&&p.statut!=='perdu').length
   document.getElementById('cnt-all').textContent=prospects.length
-  document.getElementById('cnt-cd').textContent=prospects.filter(p=>resolveType(p.type)==='clinique_dentaire').length
-  document.getElementById('cnt-ce').textContent=prospects.filter(p=>resolveType(p.type)==='clinique_esthetique').length
-  document.getElementById('cnt-ins').textContent=prospects.filter(p=>resolveType(p.type)==='institut').length
-  document.getElementById('cnt-ind').textContent=prospects.filter(p=>resolveType(p.type)==='independant').length
+  // Type counts are handled by buildTypeFilters()
 }
 
 // ── SIDEBAR ──
@@ -1310,15 +1464,18 @@ function switchView(v){
   document.getElementById('list-view').classList.toggle('active',v==='list')
   document.getElementById('insights-view').classList.toggle('active',v==='insights')
   document.getElementById('instagram-view').classList.toggle('active',v==='instagram')
+  const sv=document.getElementById('settings-view')
+  if(sv)sv.style.display=v==='settings'?'block':'none'
   if(v==='map'){initMap();setTimeout(()=>leafletMap?.invalidateSize(),100)}
   else if(v==='pipeline')buildPipeline()
   else if(v==='list')buildList()
   else if(v==='insights')buildInsights()
   else if(v==='instagram')loadInstagramStats()
+  else if(v==='settings')buildSettingsPage()
 }
 
 function refresh(){
-  updateStats();buildSFilters();buildMini()
+  updateStats();buildTypeFilters();buildSFilters();buildMini()
   if(currentView==='map')renderMarkers()
   else if(currentView==='pipeline')buildPipeline()
   else if(currentView==='list')buildList()
@@ -1554,6 +1711,207 @@ function buildInsights(){
         </div>`).join('')}
     </div>
   `
+}
+
+
+// ── ONBOARDING ──
+const OB_DEFAULTS=[
+  {key:'type1',label:'Type 1',color:'#3B82F6',emoji:'📌'},
+  {key:'type2',label:'Type 2',color:'#EC4899',emoji:'📌'},
+]
+let obTypes=[]
+
+function showOnboarding(){
+  // Pre-fill with defaults
+  obTypes=[
+    {key:'type1',label:'',color:'#3B82F6',emoji:'📌'},
+    {key:'type2',label:'',color:'#EC4899',emoji:'📌'},
+  ]
+  renderObTypes()
+  document.getElementById('onboarding').style.display='block'
+}
+
+function renderObTypes(){
+  const el=document.getElementById('ob-types-list')
+  if(!el)return
+  el.innerHTML=obTypes.map((t,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <input type="color" value="${t.color}" onchange="obTypes[${i}].color=this.value" style="width:32px;height:32px;border:none;border-radius:6px;cursor:pointer;padding:2px">
+      <input type="text" value="${t.label}" placeholder="Nom du type (ex: Client, Prospect, Partenaire)" oninput="obTypes[${i}].label=this.value"
+        style="flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:7px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:12px;color:white;outline:none">
+      <button onclick="obTypes.splice(${i},1);renderObTypes()" style="background:rgba(217,83,79,.15);border:none;border-radius:6px;width:28px;height:28px;color:#F4A0A0;cursor:pointer;font-size:14px">×</button>
+    </div>`).join('')
+}
+
+function addObTypeRow(){
+  const colors=['#8B6BB3','#4CAF50','#F59E0B','#06B6D4','#EF4444']
+  obTypes.push({key:'type'+Date.now(),label:'',color:colors[obTypes.length%colors.length],emoji:'📌'})
+  renderObTypes()
+}
+
+function obNext(){
+  // Save types from onboarding
+  const filled=obTypes.filter(t=>t.label.trim())
+  if(!filled.length){showToast('Ajoutez au moins un type de prospect');return}
+  const newTypes={}
+  filled.forEach(t=>{
+    const key=t.label.toLowerCase().replace(/[^a-z0-9]/g,'_')
+    newTypes[key]={label:t.label,color:t.color,emoji:t.emoji||'📌'}
+  })
+  TYPES=newTypes
+  saveUserTypes()
+  // Update sidebar filters
+  buildTypeFilters()
+  document.getElementById('ob-step1').style.display='none'
+  document.getElementById('ob-step2').style.display='block'
+}
+
+function skipOnboarding(){
+  document.getElementById('onboarding').style.display='none'
+  openAddModal()
+}
+
+async function handleObCSV(input){
+  const file=input.files[0];if(!file)return
+  const text=await file.text()
+  const result=parseCSV(text)
+  if(!result.rows.length){showToast('Fichier vide ou format non reconnu');return}
+  const preview=document.getElementById('ob-csv-preview')
+  preview.innerHTML=`<div style="background:rgba(76,175,80,.1);border:1px solid rgba(76,175,80,.2);border-radius:8px;padding:12px;font-size:12px;color:#A0F4A0;margin-top:4px">
+    ✓ ${result.rows.length} prospects détectés. Colonnes : ${result.headers.join(', ')}
+    <button onclick="importCSVRows(${JSON.stringify(result).replace(/"/g,'&quot;')})" style="display:block;margin-top:10px;background:#4CAF50;color:white;border:none;border-radius:6px;padding:8px 16px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;width:100%">
+      Importer ${result.rows.length} prospects →
+    </button>
+  </div>`
+}
+
+// ── CSV IMPORT ──
+function parseCSV(text){
+  const lines=text.trim().split(/\r?\n/).filter(Boolean)
+  if(lines.length<2)return{headers:[],rows:[]}
+  const sep=lines[0].includes(';')?';':','
+  const headers=lines[0].split(sep).map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase())
+  const rows=lines.slice(1).map(line=>{
+    const vals=line.split(sep).map(v=>v.trim().replace(/^"|"$/g,''))
+    const obj={}
+    headers.forEach((h,i)=>obj[h]=vals[i]||'')
+    return obj
+  }).filter(r=>Object.values(r).some(v=>v))
+  return{headers,rows}
+}
+
+function findCol(row,aliases){
+  for(const a of aliases){
+    const key=Object.keys(row).find(k=>k.includes(a))
+    if(key&&row[key])return row[key]
+  }
+  return''
+}
+
+async function importCSVRows(result){
+  const rows=result.rows
+  let imported=0,errors=0
+  const defaultType=Object.keys(TYPES)[0]||'type1'
+  for(const row of rows){
+    const nom=findCol(row,['nom','name','etablissement','structure','organisation','contact','prenom'])||'Sans nom'
+    const email=findCol(row,['email','mail','courriel','e-mail'])
+    const tel=findCol(row,['tel','phone','telephone','mobile','portable'])
+    const ville=findCol(row,['ville','city','location','localite','commune'])
+    const notes=findCol(row,['note','notes','commentaire','description','info'])
+    const statut=findCol(row,['statut','status','etat'])||'a_contacter'
+    const typeRaw=findCol(row,['type','categorie','category']).toLowerCase()
+    const type=Object.keys(TYPES).find(k=>TYPES[k].label.toLowerCase().includes(typeRaw)||k.includes(typeRaw))||defaultType
+    const contacts=email||tel?[{prenom:'',nom:'',role:'Contact',email,tel,initiales:'',color:TYPES[type]?.color||'#6B7280'}]:[]
+    const{error}=await db.from('prospects').insert([{
+      user_id:currentUser.id,nom,type,ville:ville||'—',statut:ST[statut]?statut:'a_contacter',
+      pack:'—',notes,contacts,historique:[{date:new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'short'}),action:'📂 Importé via CSV',reponse:false}]
+    }])
+    if(error)errors++; else imported++
+  }
+  await loadData()
+  document.getElementById('onboarding').style.display='none'
+  showToast(`✅ ${imported} prospects importés${errors?' · '+errors+' erreurs':''}`)
+}
+
+// ── SETTINGS PAGE ──
+function buildSettingsPage(){
+  if(currentUser)document.getElementById('settings-email').textContent=currentUser.email
+  renderTypesList()
+}
+
+function renderTypesList(){
+  const el=document.getElementById('types-list')
+  if(!el)return
+  el.innerHTML=Object.entries(TYPES).map(([key,t])=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px" id="trow-${key}">
+      <input type="color" value="${t.color}" onchange="TYPES['${key}'].color=this.value;saveUserTypes();refresh()"
+        style="width:32px;height:32px;border:none;border-radius:6px;cursor:pointer;padding:2px">
+      <input type="text" value="${t.label}" oninput="TYPES['${key}'].label=this.value;saveUserTypes();refresh()"
+        style="flex:1;border:1px solid var(--cream);border-radius:7px;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);outline:none">
+      <input type="text" value="${t.emoji||'📌'}" oninput="TYPES['${key}'].emoji=this.value;saveUserTypes()" maxlength="2"
+        style="width:40px;border:1px solid var(--cream);border-radius:7px;padding:8px;font-size:14px;text-align:center;outline:none">
+      <button onclick="deleteType('${key}')" style="background:rgba(217,83,79,.1);border:none;border-radius:6px;width:28px;height:28px;color:var(--red);cursor:pointer;font-size:14px">×</button>
+    </div>`).join('')
+}
+
+function addTypeRow(){
+  const colors=['#8B6BB3','#4CAF50','#F59E0B','#06B6D4','#EF4444','#3B82F6','#EC4899']
+  const key='type_'+Date.now()
+  TYPES[key]={label:'Nouveau type',color:colors[Object.keys(TYPES).length%colors.length],emoji:'📌'}
+  saveUserTypes();renderTypesList();refresh()
+}
+
+function deleteType(key){
+  if(Object.keys(TYPES).length<=1){showToast('Gardez au moins un type');return}
+  delete TYPES[key];saveUserTypes();renderTypesList();refresh()
+}
+
+// ── BUILD TYPE FILTERS IN SIDEBAR ──
+function buildTypeFilters(){
+  const el=document.getElementById('type-filters')
+  if(!el)return
+  el.innerHTML=`<button class="fbtn ${typeFilter==="all"?"active":""}" onclick="filterType('all')" id="filter-all">
+    <div class="fdot" style="background:var(--muted)"></div>Tous<span class="fcnt" id="cnt-all">${prospects.length}</span>
+  </button>`+
+  Object.entries(TYPES).map(([key,t])=>{
+    const n=prospects.filter(p=>resolveType(p.type)===key).length
+    return`<button class="fbtn ${typeFilter===key?"active":""}" onclick="filterType('${key}')" id="filter-${key}" style="font-size:11px">
+      <div class="fdot" style="background:${t.color}${key==="clinique_esthetique"?";border:1px solid rgba(255,255,255,.2)":""}"></div>
+      ${t.label}<span class="fcnt">${n}</span>
+    </button>`
+  }).join('')
+}
+
+// ── EXPORT CSV ──
+function exportCSV(){
+  const rows=[['Nom','Ville','Type','Email','Téléphone','Statut','Notes','Lat','Lng']]
+  prospects.forEach(p=>{
+    const c=p.contacts?.[0]||{}
+    rows.push([p.nom,p.ville,TYPES[resolveType(p.type)]?.label||p.type,c.email||'',c.tel||'',p.statut,p.notes||'',p.lat||'',p.lng||''])
+  })
+  const csv=rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n')
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'})
+  const url=URL.createObjectURL(blob)
+  const a=document.createElement('a');a.href=url;a.download='leadmap_export_'+new Date().toISOString().slice(0,10)+'.csv';a.click()
+  URL.revokeObjectURL(url)
+  showToast('✅ Export téléchargé')
+}
+
+// ── SETTINGS CSV IMPORT ──
+async function handleCSV(input){
+  const file=input.files[0];if(!file)return
+  const text=await file.text()
+  const result=parseCSV(text)
+  const preview=document.getElementById('csv-preview')
+  if(!result.rows.length){preview.innerHTML='<div style="color:var(--red);font-size:12px;padding:8px">Fichier vide ou format non reconnu</div>';return}
+  preview.innerHTML=`<div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;padding:14px;margin-top:4px">
+    <div style="font-size:12px;font-weight:600;color:#15803D;margin-bottom:8px">✓ ${result.rows.length} lignes détectées</div>
+    <div style="font-size:11px;color:#166534;margin-bottom:12px">Colonnes : ${result.headers.join(' · ')}</div>
+    <div style="font-size:11px;color:#166534;margin-bottom:12px">Aperçu : ${result.rows.slice(0,2).map(r=>Object.values(r).slice(0,3).join(', ')).join(' | ')}</div>
+    <button onclick="importCSVRows(${JSON.stringify(result).replace(/"/g,'&quot;')})" style="background:#16A34A;color:white;border:none;border-radius:7px;padding:9px 18px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer">
+      ⬆ Importer ${result.rows.length} prospects
+    </button>
+  </div>`
 }
 
 // ── TOAST ──
