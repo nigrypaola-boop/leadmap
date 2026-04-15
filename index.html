@@ -730,12 +730,7 @@ tbody tr:hover{background:#F9F7F5}
 <script>
 const {createClient}=supabase
 const db=createClient('https://ppaprccfyailecueoezp.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwYXByY2NmeWFpbGVjdWVvZXpwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NTY0NTksImV4cCI6MjA5MTQzMjQ1OX0.trUSIw2yhH-NIkDxWQsBOXfmduNr090uwpZzxR77dnk',{
-  auth:{
-    persistSession:true,
-    autoRefreshToken:true,
-    storageKey:'leadmap_session',
-    storage:window.localStorage
-  }
+  auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}
 })
 
 // ── STATE ──
@@ -2254,13 +2249,26 @@ async function handleCSV(input){
 async function deleteProspect(id){
   const p=prospects.find(x=>x.id===id)
   if(!p)return
-  if(!confirm('Supprimer "'+p.nom+'" définitivement ? Cette action est irréversible.'))return
+  // Show inline confirm toast instead of browser confirm()
+  const toast=document.getElementById('toast')
+  toast.innerHTML=`🗑 Supprimer <b>${p.nom}</b> ?
+    <button onclick="doDeleteProspect('${id}')" style="background:#EF4444;color:white;border:none;border-radius:5px;padding:3px 10px;margin-left:8px;cursor:pointer;font-size:11px;font-weight:600">Oui</button>
+    <button onclick="document.getElementById('toast').classList.remove('show')" style="background:rgba(255,255,255,.15);color:white;border:none;border-radius:5px;padding:3px 8px;margin-left:4px;cursor:pointer;font-size:11px">Annuler</button>`
+  toast.classList.add('show')
+  setTimeout(()=>toast.classList.remove('show'),6000)
+}
+
+async function doDeleteProspect(id){
+  document.getElementById('toast').classList.remove('show')
+  const p=prospects.find(x=>x.id===id)
+  if(!p)return
+  showToast('⏳ Suppression...')
   const{error}=await db.from('prospects').delete().eq('id',id).eq('user_id',currentUser.id)
-  if(error){showToast('Erreur : '+error.message);return}
+  if(error){showToast('❌ Erreur : '+error.message);return}
   prospects=prospects.filter(x=>x.id!==id)
-  closePanel()
+  if(currentPanelId===id)closePanel()
   refresh()
-  showToast('🗑 '+p.nom+' supprimé')
+  showToast('✅ '+p.nom+' supprimé')
 }
 
 async function deleteHistEntry(pid,index){
@@ -2278,7 +2286,12 @@ async function deleteHistEntry(pid,index){
   openPanel(pid)
 }
 // ── TOAST ──
-function showToast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3500)}
+function showToast(m,html=false){
+  const el=document.getElementById('toast')
+  if(html)el.innerHTML=m; else el.textContent=m
+  el.classList.add('show')
+  setTimeout(()=>el.classList.remove('show'),3500)
+}
 
 document.getElementById('add-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeAddModal()})
 document.getElementById('log-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeLogModal()})
