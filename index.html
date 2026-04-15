@@ -547,9 +547,14 @@ tbody tr:hover{background:#F9F7F5}
             <div style="font-family:'Geist',sans-serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px">Types de prospects</div>
             <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Définissez vos catégories et couleurs</div>
             <div id="types-list"></div>
-            <button onclick="addTypeRow()" style="display:flex;align-items:center;gap:6px;background:var(--cream);border:1px dashed rgba(0,0,0,.15);border-radius:8px;padding:9px 14px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--soft);cursor:pointer;width:100%;margin-top:8px">
-              + Ajouter un type
-            </button>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button onclick="addTypeRow()" style="flex:1;display:flex;align-items:center;gap:6px;background:var(--cream);border:1px dashed rgba(0,0,0,.15);border-radius:8px;padding:9px 14px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--soft);cursor:pointer">
+                + Ajouter un type
+              </button>
+              <button onclick="saveTypesAndConfirm()" style="background:var(--navy);color:white;border:none;border-radius:8px;padding:9px 18px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer">
+                ✓ Enregistrer
+              </button>
+            </div>
           </div>
 
           <!-- Import CSV -->
@@ -1522,24 +1527,42 @@ function openAddModal(){
 }
 function closeAddModal(){document.getElementById('add-modal').classList.remove('open')}
 async function submitNewProspect(){
-  const nom=document.getElementById('add-nom').value.trim();if(!nom){showToast('Nom requis');return}
-  const type=document.getElementById('add-type').value,ville=document.getElementById('add-ville').value.trim()
-  const adresse=document.getElementById('add-adresse').value.trim(),statut=document.getElementById('add-statut').value
-  const prenom=document.getElementById('add-prenom').value.trim(),nomDir=document.getElementById('add-nom-dir').value.trim()
-  const email=document.getElementById('add-email').value.trim(),notes=document.getElementById('add-notes').value.trim()
-  const tm=TYPES[type]||TYPES.clinique_esthetique
-  // Geocode best effort — never block submission on failure
-  if(!pendingGeo.lat){
-    const query=adresse||(ville?ville+', Suisse':'')
-    if(query){
-      try{const r=await geocodeAddress(query);if(r)pendingGeo={lat:r.lat,lng:r.lng}}catch(e){}
+  const submitBtn=document.querySelector('#add-modal .modal-submit')
+  const nom=document.getElementById('add-nom').value.trim()
+  if(!nom){showToast('Le nom est requis');return}
+  if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='Ajout...'}
+  try{
+    const typeEl=document.getElementById('add-type')
+    const type=(typeEl&&typeEl.value)?typeEl.value:(Object.keys(TYPES)[0]||'autre')
+    const ville=document.getElementById('add-ville').value.trim()
+    const adresse=document.getElementById('add-adresse').value.trim()
+    const statut=document.getElementById('add-statut').value||'a_contacter'
+    const prenom=document.getElementById('add-prenom').value.trim()
+    const nomDir=document.getElementById('add-nom-dir').value.trim()
+    const email=document.getElementById('add-email').value.trim()
+    const notes=document.getElementById('add-notes').value.trim()
+    const tm=TYPES[type]||Object.values(TYPES)[0]||{color:'#6B7280'}
+    // Geocode — best effort, never blocks
+    if(!pendingGeo.lat){
+      const query=adresse||(ville?ville+', Suisse':'')
+      if(query){try{const r=await geocodeAddress(query);if(r){pendingGeo.lat=r.lat;pendingGeo.lng=r.lng}}catch(e){}}
     }
+    const contacts=prenom?[{prenom,nom:nomDir,role:'Direction',email,tel:'',initiales:(prenom[0]||'')+(nomDir[0]||''),color:tm.color}]:[]
+    const row={user_id:currentUser.id,nom,type,ville:ville||'—',statut,pack:'—',notes,contacts,
+      historique:[{date:new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'short'}),action:'✅ Prospect ajouté manuellement',reponse:false}]}
+    if(adresse)row.adresse=adresse
+    if(pendingGeo.lat){row.lat=pendingGeo.lat;row.lng=pendingGeo.lng}
+    const{error}=await db.from('prospects').insert([row]).select()
+    if(error)throw new Error(error.message)
+    closeAddModal()
+    ;['add-nom','add-ville','add-adresse','add-prenom','add-nom-dir','add-email','add-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''})
+    showToast('✅ '+nom+' ajouté !')
+  }catch(e){
+    showToast('Erreur : '+e.message)
+    console.error('submitNewProspect:',e)
+  }finally{
+    if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='Ajouter'}
   }
-  const contacts=prenom?[{prenom,nom:nomDir,role:'Direction',email,tel:'',initiales:(prenom[0]||'')+(nomDir[0]||''),color:tm.color}]:[]
-  const{error}=await db.from('prospects').insert([{user_id:currentUser.id,nom,type,ville:ville||'—',adresse:adresse||null,lat:pendingGeo.lat,lng:pendingGeo.lng,statut,pack:'—',notes,contacts,historique:[{date:new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'short'}),action:'✅ Prospect ajouté manuellement',reponse:false}]}]).select()
-  if(error){showToast('Erreur: '+error.message);return}
-  closeAddModal();['add-nom','add-ville','add-adresse','add-prenom','add-nom-dir','add-email','add-notes'].forEach(id=>document.getElementById(id).value='')
-  showToast('✅ Prospect ajouté !')
 }
 
 // ── VIEWS ──
@@ -2090,6 +2113,19 @@ function addTypeRow(){
   const key='type_'+Date.now()
   TYPES[key]={label:'Nouveau type',color:colors[Object.keys(TYPES).length%colors.length],emoji:'📌'}
   saveUserTypes();renderTypesList();refresh()
+}
+
+function saveTypesAndConfirm(){
+  saveUserTypes()
+  buildTypeFilters()
+  refresh()
+  // Visual feedback on the button
+  const btns=document.querySelectorAll('#settings-view button')
+  btns.forEach(b=>{if(b.textContent.includes('Enregistrer')){
+    const orig=b.textContent;b.textContent='✓ Enregistré !';b.style.background='#4CAF50'
+    setTimeout(()=>{b.textContent=orig;b.style.background='var(--navy)'},2000)
+  }})
+  showToast('✅ Types enregistrés')
 }
 
 function deleteType(key){
