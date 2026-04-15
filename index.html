@@ -2249,26 +2249,18 @@ async function handleCSV(input){
 async function deleteProspect(id){
   const p=prospects.find(x=>x.id===id)
   if(!p)return
-  // Show inline confirm toast instead of browser confirm()
-  const toast=document.getElementById('toast')
-  toast.innerHTML=`🗑 Supprimer <b>${p.nom}</b> ?
-    <button onclick="doDeleteProspect('${id}')" style="background:#EF4444;color:white;border:none;border-radius:5px;padding:3px 10px;margin-left:8px;cursor:pointer;font-size:11px;font-weight:600">Oui</button>
-    <button onclick="document.getElementById('toast').classList.remove('show')" style="background:rgba(255,255,255,.15);color:white;border:none;border-radius:5px;padding:3px 8px;margin-left:4px;cursor:pointer;font-size:11px">Annuler</button>`
-  toast.classList.add('show')
-  setTimeout(()=>toast.classList.remove('show'),6000)
-}
-
-async function doDeleteProspect(id){
-  document.getElementById('toast').classList.remove('show')
-  const p=prospects.find(x=>x.id===id)
-  if(!p)return
-  showToast('⏳ Suppression...')
-  const{error}=await db.from('prospects').delete().eq('id',id).eq('user_id',currentUser.id)
-  if(error){showToast('❌ Erreur : '+error.message);return}
+  // Suppression immédiate — retrait visuel d'abord, puis Supabase
   prospects=prospects.filter(x=>x.id!==id)
   if(currentPanelId===id)closePanel()
   refresh()
-  showToast('✅ '+p.nom+' supprimé')
+  showToast('🗑 '+p.nom+' supprimé')
+  const{error}=await db.from('prospects').delete().eq('id',id).eq('user_id',currentUser.id)
+  if(error){
+    // En cas d'erreur, on remet le prospect
+    prospects.push(p)
+    refresh()
+    showToast('❌ Erreur : '+error.message)
+  }
 }
 
 async function deleteHistEntry(pid,index){
