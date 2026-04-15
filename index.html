@@ -616,12 +616,7 @@ tbody tr:hover{background:#F9F7F5}
     <div class="modal-grid">
       <div class="modal-field full"><label class="modal-label">Nom *</label><input type="text" class="modal-input" id="add-nom" placeholder="Clinique des Acacias"></div>
       <div class="modal-field"><label class="modal-label">Type</label>
-        <select class="modal-select" id="add-type">
-          <option value="clinique_dentaire">🔵 Clinique dentaire</option>
-          <option value="clinique_esthetique">⚫ Clinique esthétique</option>
-          <option value="institut">🩷 Institut de beauté</option>
-          <option value="independant">⚪ Médecin indépendant</option>
-        </select>
+        <select class="modal-select" id="add-type"></select>
       </div>
       <div class="modal-field"><label class="modal-label">Ville</label><input type="text" class="modal-input" id="add-ville" placeholder="Genève"></div>
       <div class="modal-field full"><label class="modal-label">Adresse complète</label><input type="text" class="modal-input" id="add-adresse" placeholder="Rue de Rive 10, 1204 Genève" oninput="debounceGeo()"><div class="geo-status" id="geo-status"></div></div>
@@ -1518,7 +1513,13 @@ function saveDirector(){
 }
 
 // ── ADD PROSPECT ──
-function openAddModal(){pendingGeo={lat:null,lng:null};document.getElementById('add-modal').classList.add('open')}
+function openAddModal(){
+  pendingGeo={lat:null,lng:null}
+  // Populate types dynamically
+  const sel=document.getElementById('add-type')
+  sel.innerHTML=Object.entries(TYPES).map(([key,t])=>`<option value="${key}">${t.emoji||'📌'} ${t.label}</option>`).join('')
+  document.getElementById('add-modal').classList.add('open')
+}
 function closeAddModal(){document.getElementById('add-modal').classList.remove('open')}
 async function submitNewProspect(){
   const nom=document.getElementById('add-nom').value.trim();if(!nom){showToast('Nom requis');return}
@@ -1527,7 +1528,13 @@ async function submitNewProspect(){
   const prenom=document.getElementById('add-prenom').value.trim(),nomDir=document.getElementById('add-nom-dir').value.trim()
   const email=document.getElementById('add-email').value.trim(),notes=document.getElementById('add-notes').value.trim()
   const tm=TYPES[type]||TYPES.clinique_esthetique
-  if(!pendingGeo.lat&&(adresse||ville)){const r=await geocodeAddress(adresse||(ville+', Suisse'));if(r)pendingGeo={lat:r.lat,lng:r.lng}}
+  // Geocode best effort — never block submission on failure
+  if(!pendingGeo.lat){
+    const query=adresse||(ville?ville+', Suisse':'')
+    if(query){
+      try{const r=await geocodeAddress(query);if(r)pendingGeo={lat:r.lat,lng:r.lng}}catch(e){}
+    }
+  }
   const contacts=prenom?[{prenom,nom:nomDir,role:'Direction',email,tel:'',initiales:(prenom[0]||'')+(nomDir[0]||''),color:tm.color}]:[]
   const{error}=await db.from('prospects').insert([{user_id:currentUser.id,nom,type,ville:ville||'—',adresse:adresse||null,lat:pendingGeo.lat,lng:pendingGeo.lng,statut,pack:'—',notes,contacts,historique:[{date:new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'short'}),action:'✅ Prospect ajouté manuellement',reponse:false}]}]).select()
   if(error){showToast('Erreur: '+error.message);return}
