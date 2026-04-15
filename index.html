@@ -1527,42 +1527,61 @@ function openAddModal(){
 }
 function closeAddModal(){document.getElementById('add-modal').classList.remove('open')}
 async function submitNewProspect(){
-  const submitBtn=document.querySelector('#add-modal .modal-submit')
-  const nom=document.getElementById('add-nom').value.trim()
+  // Récupérer les valeurs
+  const nom=(document.getElementById('add-nom').value||'').trim()
   if(!nom){showToast('Le nom est requis');return}
-  if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='Ajout...'}
-  try{
-    const typeEl=document.getElementById('add-type')
-    const type=(typeEl&&typeEl.value)?typeEl.value:(Object.keys(TYPES)[0]||'autre')
-    const ville=document.getElementById('add-ville').value.trim()
-    const adresse=document.getElementById('add-adresse').value.trim()
-    const statut=document.getElementById('add-statut').value||'a_contacter'
-    const prenom=document.getElementById('add-prenom').value.trim()
-    const nomDir=document.getElementById('add-nom-dir').value.trim()
-    const email=document.getElementById('add-email').value.trim()
-    const notes=document.getElementById('add-notes').value.trim()
-    const tm=TYPES[type]||Object.values(TYPES)[0]||{color:'#6B7280'}
-    // Geocode — best effort, never blocks
-    if(!pendingGeo.lat){
-      const query=adresse||(ville?ville+', Suisse':'')
-      if(query){try{const r=await geocodeAddress(query);if(r){pendingGeo.lat=r.lat;pendingGeo.lng=r.lng}}catch(e){}}
-    }
-    const contacts=prenom?[{prenom,nom:nomDir,role:'Direction',email,tel:'',initiales:(prenom[0]||'')+(nomDir[0]||''),color:tm.color}]:[]
-    const row={user_id:currentUser.id,nom,type,ville:ville||'—',statut,pack:'—',notes,contacts,
-      historique:[{date:new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'short'}),action:'✅ Prospect ajouté manuellement',reponse:false}]}
-    if(adresse)row.adresse=adresse
-    if(pendingGeo.lat){row.lat=pendingGeo.lat;row.lng=pendingGeo.lng}
-    const{error}=await db.from('prospects').insert([row]).select()
-    if(error)throw new Error(error.message)
-    closeAddModal()
-    ;['add-nom','add-ville','add-adresse','add-prenom','add-nom-dir','add-email','add-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''})
-    showToast('✅ '+nom+' ajouté !')
-  }catch(e){
-    showToast('Erreur : '+e.message)
-    console.error('submitNewProspect:',e)
-  }finally{
-    if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='Ajouter'}
+
+  const typeEl=document.getElementById('add-type')
+  const type=(typeEl&&typeEl.value)||Object.keys(TYPES)[0]||'autre'
+  const ville=(document.getElementById('add-ville').value||'').trim()
+  const adresse=(document.getElementById('add-adresse').value||'').trim()
+  const statut=document.getElementById('add-statut').value||'a_contacter'
+  const prenom=(document.getElementById('add-prenom').value||'').trim()
+  const nomDir=(document.getElementById('add-nom-dir').value||'').trim()
+  const email=(document.getElementById('add-email').value||'').trim()
+  const notes=(document.getElementById('add-notes').value||'').trim()
+  const color=(TYPES[type]||Object.values(TYPES)[0]||{}).color||'#6B7280'
+
+  // Géolocalisation best effort
+  let lat=pendingGeo.lat||null,lng=pendingGeo.lng||null
+  if(!lat&&(adresse||ville)){
+    try{
+      const q=adresse||(ville+', Suisse')
+      const r=await geocodeAddress(q)
+      if(r){lat=r.lat;lng=r.lng}
+    }catch(e){}
   }
+
+  // Contacts
+  const contacts=prenom?[{prenom,nom:nomDir,role:'Direction',email,tel:'',
+    initiales:(prenom[0]||'')+(nomDir[0]||''),color}]:[]
+
+  // Historique
+  const today=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'short'})
+  const historique=[{date:today,action:'✅ Prospect ajouté manuellement',reponse:false}]
+
+  // Construire la ligne
+  const row={user_id:currentUser.id,nom,type,ville:ville||'—',statut,pack:'—',notes,contacts,historique}
+  if(adresse)row.adresse=adresse
+  if(lat)row.lat=lat
+  if(lng)row.lng=lng
+
+  showToast('⏳ Ajout en cours...')
+
+  const{data,error}=await db.from('prospects').insert([row]).select()
+  if(error){
+    showToast('❌ Erreur : '+error.message)
+    console.error(error)
+    return
+  }
+
+  // Succès
+  closeAddModal()
+  pendingGeo={lat:null,lng:null}
+  ;['add-nom','add-ville','add-adresse','add-prenom','add-nom-dir','add-email','add-notes'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value=''
+  })
+  showToast('✅ '+nom+' ajouté !')
 }
 
 // ── VIEWS ──
