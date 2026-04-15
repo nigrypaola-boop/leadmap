@@ -1425,6 +1425,7 @@ function buildPipeline(){
             <div style="display:flex;gap:4px;margin-top:6px">
               <button onclick="event.stopPropagation();openPanel('${p.id}')" style="flex:1;background:var(--cream);border:none;border-radius:5px;padding:4px;font-size:9px;color:var(--soft);cursor:pointer;font-family:'DM Sans',sans-serif">👁 Voir</button>
               <button onclick="event.stopPropagation();openLogModal('${p.id}')" style="flex:1;background:var(--navy);border:none;border-radius:5px;padding:4px;font-size:9px;color:white;cursor:pointer;font-family:'DM Sans',sans-serif">✚ Logger</button>
+              <button onclick="event.stopPropagation();deleteProspect('${p.id}')" style="background:rgba(217,83,79,.1);border:none;border-radius:5px;width:26px;font-size:12px;color:var(--red);cursor:pointer" title="Supprimer">×</button>
             </div>
           </div>`
         }).join('')}
